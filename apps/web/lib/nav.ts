@@ -1,8 +1,7 @@
 export const shellSections = [
-  { label: "Dashboard", value: "Dashboard" },
-  { label: "Deal Check", value: "Intelligence" },
-  { label: "Market Search", value: "Opportunity Scan" },
-  { label: "Watchlist", value: "Tracked Vehicles" },
-  { label: "Providers", value: "Integrations" }
+  { label: "Dashboard", value: "Dashboard", href: "/" },
+  { label: "Deal Check", value: "Intelligence", href: "/deal-check" },
+  { label: "Market Search", value: "Opportunity Scan", href: "/market-search" },
+  { label: "Watchlist", value: "Tracked Vehicles", href: "/watchlist" },
+  { label: "Providers", value: "Integrations", href: "/providers" }
 ] as const;
-

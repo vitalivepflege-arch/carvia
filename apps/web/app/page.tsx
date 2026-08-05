@@ -11,6 +11,7 @@ export default async function HomePage() {
       analysesCount={metrics.analysesCount}
       companyName={metrics.company?.name ?? "Unknown Company"}
       providerCount={metrics.providerCount}
+      recentAnalyses={metrics.recentAnalyses}
       watchlistCount={metrics.watchlistCount}
     />
   );

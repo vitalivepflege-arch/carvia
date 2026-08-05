@@ -1,22 +1,32 @@
+import Link from "next/link";
 import { Card, StatusPill } from "@carvia/ui";
 import { shellSections } from "../../lib/nav";
 import { SignOutButton } from "./sign-out-button";
-
-const topDeals = [
-  { vehicle: "BMW M340i xDrive", score: 91, margin: "EUR 4,800", confidence: "82%" },
-  { vehicle: "Mercedes C300e AMG Line", score: 87, margin: "EUR 3,900", confidence: "75%" },
-  { vehicle: "Audi S5 TDI Quattro", score: 85, margin: "EUR 5,100", confidence: "69%" }
-];
 
 export function AppShell({
   analysesCount,
   companyName,
   providerCount,
+  recentAnalyses,
   watchlistCount
 }: {
   analysesCount: number;
   companyName: string;
   providerCount: number;
+  recentAnalyses: Array<{
+    confidence: number | null;
+    dealerScore: number | null;
+    id: string;
+    projectedMargin: number | string | null;
+    vehicle: {
+      firstRegistration: Date | null;
+      id: string;
+      make: string;
+      mileageKm: number | null;
+      model: string;
+      powerHp: number | null;
+    } | null;
+  }>;
   watchlistCount: number;
 }) {
   return (
@@ -37,8 +47,9 @@ export function AppShell({
 
           <nav className="mt-8 space-y-3">
             {shellSections.map((section, index) => (
-              <div
+              <Link
                 key={section.label}
+                href={section.href}
                 className={`rounded-2xl border px-4 py-3 ${
                   index === 1
                     ? "border-teal-300/60 bg-teal-400/10 text-white"
@@ -47,7 +58,7 @@ export function AppShell({
               >
                 <p className="text-sm font-medium">{section.label}</p>
                 <p className="mt-1 text-xs text-slate-400">{section.value}</p>
-              </div>
+              </Link>
             ))}
           </nav>
 
@@ -98,27 +109,41 @@ export function AppShell({
               </div>
             </Card>
 
-            <Card title="Top Deals Today">
+            <Card title="Recent Analyses">
               <div className="mt-5 space-y-4">
-                {topDeals.map((deal) => (
-                  <div
-                    key={deal.vehicle}
-                    className="rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-4"
+                {recentAnalyses.length === 0 ? (
+                  <div className="rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-5">
+                    <p className="font-medium text-[var(--navy)]">No saved analyses yet</p>
+                    <p className="mt-2 text-sm text-[var(--foreground-muted)]">
+                      Run the first Deal Check to populate the dashboard with company-specific opportunities.
+                    </p>
+                  </div>
+                ) : (
+                  recentAnalyses.map((analysis) => (
+                  <Link
+                    href={`/analyses/${analysis.id}`}
+                    key={analysis.id}
+                    className="block rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-4"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="font-medium text-[var(--navy)]">{deal.vehicle}</p>
+                        <p className="font-medium text-[var(--navy)]">
+                          {analysis.vehicle
+                            ? `${analysis.vehicle.make} ${analysis.vehicle.model}`
+                            : "Saved vehicle"}
+                        </p>
                         <p className="mt-1 text-sm text-[var(--foreground-muted)]">
-                          Projected Margin {deal.margin}
+                          Projected Margin EUR {Number(analysis.projectedMargin ?? 0).toLocaleString("en-US")}
                         </p>
                       </div>
-                      <StatusPill tone="success">Score {deal.score}</StatusPill>
+                      <StatusPill tone="success">Score {analysis.dealerScore ?? "-"}</StatusPill>
                     </div>
                     <p className="mt-3 text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">
-                      Confidence {deal.confidence}
+                      Confidence {analysis.confidence ?? "-"}%
                     </p>
-                  </div>
-                ))}
+                  </Link>
+                  ))
+                )}
               </div>
             </Card>
           </div>
