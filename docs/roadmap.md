@@ -33,6 +33,7 @@
 - normalization pipeline
 - saved searches
 - alerts
+- recurring sourcing review workflows
 
 ## Phase 5
 

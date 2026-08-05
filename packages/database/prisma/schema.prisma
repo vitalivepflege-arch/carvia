@@ -50,6 +50,7 @@ model Company {
   profiles             DealerProfile[]
   analyses             VehicleAnalysis[]
   watchlistItems       Watchlist[]
+  savedSearches        SavedSearch[]
   providers            ProviderCredential[]
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
@@ -172,4 +173,18 @@ model ProviderCredential {
   updatedAt       DateTime       @updatedAt
 
   @@unique([companyId, providerKey])
+}
+
+model SavedSearch {
+  id               String   @id @default(cuid())
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name             String
+  filters          Json
+  alertEnabled     Boolean  @default(false)
+  lastRunResultCount Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([companyId, createdAt])
 }

@@ -14,6 +14,7 @@ This repository now covers the core MVP foundation and first interactive sourcin
 - deal check workflow with persisted analyses
 - watchlist for tracked opportunities
 - market search over mock inventory
+- saved searches with alert-ready flags
 - provider readiness overview
 
 ## Still Missing

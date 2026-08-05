@@ -1,7 +1,10 @@
+import Link from "next/link";
 import { Card, StatusPill } from "@carvia/ui";
 import { MockVehicleProvider } from "@carvia/providers";
 import { requireOnboardedSession } from "../../lib/auth";
+import { getSavedSearches } from "../../lib/market-search";
 import { saveMarketVehicleToWatchlist } from "./actions";
+import { createSavedSearch, deleteSavedSearch, toggleSavedSearchAlert } from "./saved-search-actions";
 
 const mockVehicleProvider = new MockVehicleProvider();
 
@@ -14,7 +17,7 @@ export default async function MarketSearchPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  await requireOnboardedSession();
+  const session = await requireOnboardedSession();
 
   const params = await searchParams;
   const make = readSearchValue(params.make);
@@ -33,6 +36,7 @@ export default async function MarketSearchPage({
 
   const taxonomy = await mockVehicleProvider.getTaxonomy();
   const makes = Object.keys(taxonomy);
+  const savedSearches = await getSavedSearches(session.user.companyId!);
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#faf8f3_0%,#eff0eb_100%)] px-6 py-10">
@@ -105,15 +109,127 @@ export default async function MarketSearchPage({
             </label>
 
             <div className="md:col-span-2 xl:col-span-5">
-              <button
-                type="submit"
-                className="rounded-full bg-[var(--navy)] px-5 py-3 text-sm font-semibold text-white"
-              >
-                Search inventory
-              </button>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="submit"
+                  className="rounded-full bg-[var(--navy)] px-5 py-3 text-sm font-semibold text-white"
+                >
+                  Search inventory
+                </button>
+              </div>
             </div>
           </form>
         </Card>
+
+        <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+          <Card title="Save current search">
+            <form action={createSavedSearch} className="mt-5 space-y-4">
+              <input type="hidden" name="make" value={make} />
+              <input type="hidden" name="model" value={model} />
+              <input type="hidden" name="fuelType" value={fuelType} />
+              <input type="hidden" name="transmission" value={transmission} />
+              <input type="hidden" name="purchasePriceMax" value={purchasePriceMaxValue} />
+              <input type="hidden" name="resultCount" value={inventory.length} />
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium">Search name</span>
+                <input
+                  name="name"
+                  defaultValue={
+                    make || model ? `${make || "Any make"} ${model || "opportunities"}` : "Open opportunity scan"
+                  }
+                  className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3"
+                />
+              </label>
+
+              <label className="flex items-center gap-3 text-sm text-[var(--navy)]">
+                <input name="alertEnabled" type="checkbox" className="h-4 w-4 rounded border-[var(--border)]" />
+                Enable alert flag for this saved search
+              </label>
+
+              <p className="text-sm text-[var(--foreground-muted)]">
+                This stores the active filters in your tenant workspace so buyers can rerun the same sourcing window later.
+              </p>
+
+              <button
+                type="submit"
+                className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-semibold text-[var(--navy)]"
+              >
+                Save search profile
+              </button>
+            </form>
+          </Card>
+
+          <Card title="Saved searches">
+            <div className="mt-5 space-y-4">
+              {savedSearches.length === 0 ? (
+                <div className="rounded-3xl bg-[var(--surface-muted)] p-5">
+                  <p className="font-medium text-[var(--navy)]">No saved searches yet</p>
+                  <p className="mt-2 text-sm text-[var(--foreground-muted)]">
+                    Save a filter profile to prepare repeatable sourcing scans and future alerting.
+                  </p>
+                </div>
+              ) : (
+                savedSearches.map((search) => (
+                  <div key={search.id} className="rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-[var(--navy)]">{search.name}</p>
+                        <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                          {[
+                            search.filters.make || "Any make",
+                            search.filters.model || "Any model",
+                            search.filters.fuelType || "Any fuel",
+                            search.filters.transmission || "Any transmission",
+                            search.filters.purchasePriceMax
+                              ? `Max EUR ${Number(search.filters.purchasePriceMax).toLocaleString("en-US")}`
+                              : "No price cap"
+                          ].join(" | ")}
+                        </p>
+                      </div>
+                      <StatusPill tone={search.alertEnabled ? "success" : "info"}>
+                        {search.alertEnabled ? "Alert ready" : "Stored only"}
+                      </StatusPill>
+                    </div>
+
+                    <p className="mt-3 text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">
+                      Saved on {search.createdAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
+                    </p>
+
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Link
+                        href={`/market-search?make=${encodeURIComponent(search.filters.make)}&model=${encodeURIComponent(search.filters.model)}&fuelType=${encodeURIComponent(search.filters.fuelType)}&transmission=${encodeURIComponent(search.filters.transmission)}&purchasePriceMax=${encodeURIComponent(search.filters.purchasePriceMax)}`}
+                        className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
+                      >
+                        Reopen filters
+                      </Link>
+
+                      <form action={toggleSavedSearchAlert}>
+                        <input type="hidden" name="savedSearchId" value={search.id} />
+                        <button
+                          type="submit"
+                          className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
+                        >
+                          {search.alertEnabled ? "Disable alert" : "Enable alert"}
+                        </button>
+                      </form>
+
+                      <form action={deleteSavedSearch}>
+                        <input type="hidden" name="savedSearchId" value={search.id} />
+                        <button
+                          type="submit"
+                          className="rounded-full border border-[rgba(190,63,51,0.2)] bg-[rgba(190,63,51,0.08)] px-4 py-2 text-sm font-medium text-[var(--danger)]"
+                        >
+                          Delete
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
+        </div>
 
         <div className="grid gap-5">
           {inventory.length === 0 ? (
