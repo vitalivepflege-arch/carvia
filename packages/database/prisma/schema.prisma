@@ -157,6 +157,7 @@ model Watchlist {
   createdAt  DateTime @default(now())
 
   @@index([companyId, vehicleId])
+  @@unique([companyId, vehicleId])
 }
 
 model ProviderCredential {

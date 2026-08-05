@@ -1,6 +1,6 @@
 # Gap Analysis
 
-This repository intentionally covers the Phase 0 baseline only.
+This repository now covers the core MVP foundation and first interactive sourcing workflows.
 
 ## Already Present
 
@@ -10,19 +10,21 @@ This repository intentionally covers the Phase 0 baseline only.
 - canonical vehicle and analysis schema contracts
 - prisma data model for company, vehicle, listings, and analysis records
 - local docker infrastructure and CI workflow
+- authentication and tenant onboarding
+- deal check workflow with persisted analyses
+- watchlist for tracked opportunities
+- market search over mock inventory
+- provider readiness overview
 
 ## Still Missing
 
-- real authentication and session handling
-- company onboarding flows
-- tenant authorization enforcement in runtime code
-- dynamic vehicle taxonomy and modern search UX
 - import pipeline and file validation
-- comparables, pricing, demand, liquidity, risk, and confidence implementations
-- real charts and deal detail workflows
+- deeper comparables, pricing, demand, liquidity, risk, and confidence implementations
+- saved searches and alerts
+- deal pipeline workflow states
+- real charts and richer analysis visualization
 - live provider adapters with official credentials
 
 ## Why This Is Acceptable
 
-The current baseline is intentionally structured to let Phase 1 begin immediately without repo migration, package extraction, or schema rework.
-
+The current repository is intentionally structured so the next phases can land without repo migration, package extraction, or schema rework.

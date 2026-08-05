@@ -18,32 +18,31 @@
 - vehicle taxonomy and dynamic input flow
 - deal check workflow
 - manual vehicle entry
+- analysis detail surface
+- watchlist save flow
 
 ## Phase 3
 
 - mock provider enrichment
-- csv/json import
-- normalization pipeline
+- market search
+- provider readiness dashboard
 
 ## Phase 4
 
-- comparables engine
-- market pricing summary
-- cost basis
-- margin and confidence services
-- dealer score engine
+- csv/json import
+- normalization pipeline
+- saved searches
+- alerts
 
 ## Phase 5
 
-- deal detail surface
-- comparables table
+- deeper comparables engine
 - market position visuals
-- risk factors
+- risk explainability
+- scoring refinements
 
 ## Phase 6
 
-- watchlist
-- saved searches
-- alerts
 - deal pipeline
-
+- acquisition workflow states
+- provider credential management

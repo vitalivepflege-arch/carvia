@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@carvia/database";
-import { Card, StatusPill } from "@carvia/ui";
 import { MockVehicleProvider } from "@carvia/providers";
+import { Card, StatusPill } from "@carvia/ui";
+import { addVehicleToWatchlist } from "../../watchlist/actions";
 import { requireOnboardedSession } from "../../../lib/auth";
 
 const mockProvider = new MockVehicleProvider();
@@ -14,6 +15,7 @@ export default async function AnalysisDetailPage({
 }) {
   const { analysisId } = await params;
   const session = await requireOnboardedSession();
+
   const analysis = await prisma.vehicleAnalysis.findFirst({
     where: {
       id: analysisId,
@@ -21,7 +23,7 @@ export default async function AnalysisDetailPage({
     }
   });
 
-  if (!analysis || !analysis.vehicleId) {
+  if (!analysis?.vehicleId) {
     notFound();
   }
 
@@ -32,6 +34,15 @@ export default async function AnalysisDetailPage({
   if (!vehicle) {
     notFound();
   }
+
+  const watchlistItem = await prisma.watchlist.findUnique({
+    where: {
+      companyId_vehicleId: {
+        companyId: session.user.companyId!,
+        vehicleId: vehicle.id
+      }
+    }
+  });
 
   const comparables = await mockProvider.getPriceData({
     id: vehicle.id,
@@ -46,9 +57,7 @@ export default async function AnalysisDetailPage({
     trim: null,
     vehicleType: "Car",
     bodyType: null,
-    firstRegistration: vehicle.firstRegistration
-      ? vehicle.firstRegistration.toISOString().slice(0, 7)
-      : null,
+    firstRegistration: vehicle.firstRegistration ? vehicle.firstRegistration.toISOString().slice(0, 7) : null,
     mileageKm: vehicle.mileageKm,
     fuelType: vehicle.fuelType,
     powerKw: null,
@@ -93,7 +102,7 @@ export default async function AnalysisDetailPage({
               {vehicle.make} {vehicle.model}
             </h1>
             <p className="mt-2 text-sm text-[var(--foreground-muted)]">
-              Created on August 5, 2026 in the current tenant context.
+              Created on {analysis.createdAt.toLocaleDateString("en-US", { dateStyle: "long" })} in the current tenant context.
             </p>
           </div>
           <div className="flex gap-3">
@@ -122,20 +131,61 @@ export default async function AnalysisDetailPage({
 
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
           <Card title="Vehicle Snapshot">
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              {[
-                ["First Registration", vehicle.firstRegistration?.toISOString().slice(0, 7) ?? "-"],
-                ["Mileage", vehicle.mileageKm ? `${vehicle.mileageKm.toLocaleString("en-US")} km` : "-"],
-                ["Fuel", vehicle.fuelType ?? "-"],
-                ["Transmission", vehicle.transmission ?? "-"],
-                ["Power", vehicle.powerHp ? `${vehicle.powerHp} PS` : "-"],
-                ["Confidence", analysis.confidence ? `${analysis.confidence}%` : "-"]
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-3xl bg-[var(--surface-muted)] p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</p>
-                  <p className="mt-2 text-lg font-medium text-[var(--navy)]">{value}</p>
+            <div className="mt-5 space-y-5">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[
+                  ["First Registration", vehicle.firstRegistration?.toISOString().slice(0, 7) ?? "-"],
+                  ["Mileage", vehicle.mileageKm ? `${vehicle.mileageKm.toLocaleString("en-US")} km` : "-"],
+                  ["Fuel", vehicle.fuelType ?? "-"],
+                  ["Transmission", vehicle.transmission ?? "-"],
+                  ["Power", vehicle.powerHp ? `${vehicle.powerHp} PS` : "-"],
+                  ["Confidence", analysis.confidence ? `${analysis.confidence}%` : "-"]
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-3xl bg-[var(--surface-muted)] p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</p>
+                    <p className="mt-2 text-lg font-medium text-[var(--navy)]">{value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-3xl border border-[var(--border)] bg-white p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-[var(--navy)]">Watchlist status</p>
+                    <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                      {watchlistItem
+                        ? "This vehicle is already tracked by your company."
+                        : "Save this vehicle to the watchlist for ongoing sourcing review."}
+                    </p>
+                  </div>
+                  {watchlistItem ? <StatusPill tone="success">Tracked</StatusPill> : null}
                 </div>
-              ))}
+
+                {!watchlistItem ? (
+                  <form action={addVehicleToWatchlist} className="mt-4 space-y-3">
+                    <input type="hidden" name="vehicleId" value={vehicle.id} />
+                    <textarea
+                      name="note"
+                      rows={3}
+                      className="w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--navy)] outline-none"
+                      placeholder="Optional note for your buying team"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-full bg-[var(--navy)] px-4 py-2 text-sm font-semibold text-white"
+                    >
+                      Add to watchlist
+                    </button>
+                  </form>
+                ) : (
+                  <Link
+                    href="/watchlist"
+                    className="mt-4 inline-flex rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-2 text-sm font-medium text-[var(--navy)]"
+                  >
+                    Open watchlist
+                  </Link>
+                )}
+              </div>
             </div>
           </Card>
 
@@ -151,7 +201,7 @@ export default async function AnalysisDetailPage({
                       {comparable.make} {comparable.variant ?? comparable.model}
                     </p>
                     <p className="mt-1 text-sm text-[var(--foreground-muted)]">
-                      {comparable.firstRegistration ?? "-"} · {(comparable.mileageKm ?? 0).toLocaleString("en-US")} km
+                      {comparable.firstRegistration ?? "-"} | {(comparable.mileageKm ?? 0).toLocaleString("en-US")} km
                     </p>
                   </div>
                   <p className="text-sm font-medium text-[var(--navy)]">

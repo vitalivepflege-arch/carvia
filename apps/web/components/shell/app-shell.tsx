@@ -4,12 +4,14 @@ import { shellSections } from "../../lib/nav";
 import { SignOutButton } from "./sign-out-button";
 
 export function AppShell({
+  activeSection = "Dashboard",
   analysesCount,
   companyName,
   providerCount,
   recentAnalyses,
   watchlistCount
 }: {
+  activeSection?: string;
   analysesCount: number;
   companyName: string;
   providerCount: number;
@@ -46,12 +48,12 @@ export function AppShell({
           </div>
 
           <nav className="mt-8 space-y-3">
-            {shellSections.map((section, index) => (
+            {shellSections.map((section) => (
               <Link
                 key={section.label}
                 href={section.href}
                 className={`rounded-2xl border px-4 py-3 ${
-                  index === 1
+                  section.label === activeSection
                     ? "border-teal-300/60 bg-teal-400/10 text-white"
                     : "border-white/10 bg-white/5 text-slate-200"
                 }`}
@@ -86,24 +88,24 @@ export function AppShell({
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.9fr)]">
-            <Card title="Phase 0 Repository Baseline">
+            <Card title="Current MVP Footing">
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 <div className="rounded-3xl bg-[var(--surface-muted)] p-5">
-                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Prepared boundaries</p>
+                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Live foundations</p>
                   <ul className="mt-3 space-y-2 text-sm text-[var(--foreground)]">
-                    <li>Canonical vehicle schema</li>
-                    <li>Provider contracts and mock mode</li>
-                    <li>Confidence-aware scoring foundation</li>
-                    <li>Tenant-safe company model baseline</li>
+                    <li>Tenant-safe authentication and onboarding</li>
+                    <li>Deal Check workflow with persisted analyses</li>
+                    <li>Watchlist flow for tracked opportunities</li>
+                    <li>Provider boundaries and mock market inventory</li>
                   </ul>
                 </div>
                 <div className="rounded-3xl bg-[var(--surface-muted)] p-5">
                   <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Next implementation focus</p>
                   <ul className="mt-3 space-y-2 text-sm text-[var(--foreground)]">
-                    <li>Authentication and company onboarding</li>
-                    <li>Deal Check vehicle entry workflow</li>
-                    <li>Mock market comparables</li>
-                    <li>Analysis engine services</li>
+                    <li>Saved searches and sourcing alerts</li>
+                    <li>Provider credential management</li>
+                    <li>Import and normalization pipeline</li>
+                    <li>Deeper scoring and risk explainability</li>
                   </ul>
                 </div>
               </div>

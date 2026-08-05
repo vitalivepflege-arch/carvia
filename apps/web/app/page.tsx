@@ -8,6 +8,7 @@ export default async function HomePage() {
 
   return (
     <AppShell
+      activeSection="Dashboard"
       analysesCount={metrics.analysesCount}
       companyName={metrics.company?.name ?? "Unknown Company"}
       providerCount={metrics.providerCount}
