@@ -1,0 +1,10 @@
+{
+  "extends": "./base.json",
+  "compilerOptions": {
+    "incremental": true,
+    "jsx": "preserve",
+    "isolatedModules": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"]
+  }
+}
+

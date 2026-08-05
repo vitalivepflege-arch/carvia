@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  BUYER
+  SALES
+  VIEWER
+}
+
+enum ProviderStatus {
+  CONNECTED
+  NOT_CONFIGURED
+  DISABLED
+  ERROR
+}
+
+model User {
+  id                   String    @id @default(cuid())
+  email                String    @unique
+  passwordHash         String
+  name                 String?
+  role                 UserRole  @default(VIEWER)
+  companyId            String?
+  company              Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  onboardingCompletedAt DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+}
+
+model Company {
+  id                   String            @id @default(cuid())
+  name                 String
+  vatId                String?
+  contactEmail         String?
+  contactPhone         String?
+  preferredBrands      String[]
+  averagePurchaseBudget Decimal?        @db.Decimal(12, 2)
+  minimumMarginTarget  Decimal?          @db.Decimal(12, 2)
+  targetDaysToSell     Int?
+  users                User[]
+  locations            DealerLocation[]
+  profiles             DealerProfile[]
+  analyses             VehicleAnalysis[]
+  watchlistItems       Watchlist[]
+  providers            ProviderCredential[]
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+}
+
+model DealerProfile {
+  id              String   @id @default(cuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companySize     String?
+  targetStockTurn Int?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model DealerLocation {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  name        String
+  country     String
+  postalCode  String
+  city        String?
+  street      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Vehicle {
+  id                String                 @id @default(cuid())
+  provider          String
+  providerVehicleId String?
+  make              String
+  model             String
+  firstRegistration DateTime?
+  mileageKm         Int?
+  fuelType          String?
+  powerHp           Int?
+  transmission      String?
+  driveType         String?
+  priceGross        Decimal?               @db.Decimal(12, 2)
+  country           String?
+  postalCode        String?
+  listingUrl        String?
+  firstSeenAt       DateTime?
+  lastSeenAt        DateTime?
+  removedAt         DateTime?
+  listings          VehicleListing[]
+  snapshots         VehicleListingSnapshot[]
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  @@index([provider, providerVehicleId])
+  @@index([make, model])
+}
+
+model VehicleListing {
+  id             String                 @id @default(cuid())
+  vehicleId      String
+  vehicle        Vehicle                @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  sourceProvider String
+  askingPrice    Decimal?               @db.Decimal(12, 2)
+  sellerType     String?
+  status         String?
+  snapshots      VehicleListingSnapshot[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+}
+
+model VehicleListingSnapshot {
+  id          String         @id @default(cuid())
+  vehicleId   String
+  listingId   String?
+  vehicle     Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  listing     VehicleListing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  timestamp   DateTime
+  price       Decimal?       @db.Decimal(12, 2)
+  mileageKm   Int?
+  status      String
+  provider    String
+}
+
+model VehicleAnalysis {
+  id                       String    @id @default(cuid())
+  companyId                String
+  company                  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  vehicleId                String?
+  purchasePrice            Decimal   @db.Decimal(12, 2)
+  totalLandedCost          Decimal?  @db.Decimal(12, 2)
+  estimatedTransactionPrice Decimal? @db.Decimal(12, 2)
+  projectedMargin          Decimal?  @db.Decimal(12, 2)
+  dealerScore              Int?
+  confidence               Int?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+}
+
+model Watchlist {
+  id         String   @id @default(cuid())
+  companyId  String
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  vehicleId  String
+  note       String?
+  createdAt  DateTime @default(now())
+
+  @@index([companyId, vehicleId])
+}
+
+model ProviderCredential {
+  id              String         @id @default(cuid())
+  companyId       String
+  company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  providerKey     String
+  status          ProviderStatus @default(NOT_CONFIGURED)
+  credentialsHint String?
+  lastSyncAt      DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([companyId, providerKey])
+}

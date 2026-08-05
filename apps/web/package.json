@@ -1,0 +1,30 @@
+{
+  "name": "@carvia/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "lint": "eslint app components lib next.config.ts --max-warnings=0",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "node --test ./tests/smoke.test.mjs"
+  },
+  "dependencies": {
+    "@carvia/database": "workspace:*",
+    "@carvia/domain": "workspace:*",
+    "@carvia/providers": "workspace:*",
+    "@carvia/ui": "workspace:*",
+    "bcryptjs": "^3.0.3",
+    "next": "^16.3.0",
+    "next-auth": "5.0.0-beta.32",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/react": "^19.1.11",
+    "@types/react-dom": "^19.1.7",
+    "tailwindcss": "^4.3.3"
+  }
+}
