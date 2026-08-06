@@ -6,7 +6,7 @@ import { createWatchlistActivity, deleteWatchlistActivity } from "../activities/
 import { createWatchlistContact, deleteWatchlistContact } from "../contacts/actions";
 import { completeWatchlistTask, createWatchlistTask } from "../tasks/actions";
 import { requireOnboardedSession } from "../../lib/auth";
-import { getWatchlistItems, getWatchlistPipelineSummary } from "../../lib/watchlist";
+import { getWatchlistItems, getWatchlistPipelineSummary, watchlistOfferStatusLabels } from "../../lib/watchlist";
 import { removeWatchlistItem, updateWatchlistNote, updateWatchlistWorkflow } from "./actions";
 
 const priorityTone = {
@@ -36,6 +36,15 @@ const contactTone = {
   CALL: "warning",
   EMAIL: "success",
   MESSAGE: "info"
+} as const;
+
+const offerTone = {
+  ACCEPTED: "success",
+  COUNTER_RECEIVED: "warning",
+  NONE: "info",
+  OFFER_SENT: "warning",
+  PREPARING: "info",
+  REJECTED: "danger"
 } as const;
 
 function formatStage(stage: string) {
@@ -78,7 +87,7 @@ export default async function WatchlistPage() {
             { label: "Due Now", value: String(pipelineSummary.dueNowCount), delta: `Actions due on or before ${dueDateLabel}` },
             { label: "High Priority", value: String(pipelineSummary.highPriorityCount), delta: "Urgent opportunities" },
             { label: "Negotiating", value: String(pipelineSummary.negotiatingCount), delta: "Deals in conversation" },
-            { label: "Open Tasks", value: String(pipelineSummary.openTaskCount), delta: "Follow-up work in flight" }
+            { label: "Active Offers", value: String(pipelineSummary.activeOfferCount), delta: "Negotiations in motion" }
           ].map((metric) => (
             <Card key={metric.label} title={metric.label}>
               <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
@@ -106,6 +115,7 @@ export default async function WatchlistPage() {
                       <StatusPill tone="info">{item.vehicle.country ?? "EU stock"}</StatusPill>
                       <StatusPill tone={stageTone[item.stage]}>{formatStage(item.stage)}</StatusPill>
                       <StatusPill tone={priorityTone[item.priority]}>{item.priority} Priority</StatusPill>
+                      <StatusPill tone={offerTone[item.offerStatus]}>{watchlistOfferStatusLabels[item.offerStatus]}</StatusPill>
                       {item.analysis ? (
                         <>
                           <StatusPill tone="success">Score {item.analysis.dealerScore ?? "-"}</StatusPill>
@@ -121,7 +131,10 @@ export default async function WatchlistPage() {
                         ["First Registration", item.vehicle.firstRegistration?.toISOString().slice(0, 7) ?? "-"],
                         ["Mileage", item.vehicle.mileageKm ? `${item.vehicle.mileageKm.toLocaleString("en-US")} km` : "-"],
                         ["Asking Price", item.vehicle.priceGross ? `EUR ${item.vehicle.priceGross.toLocaleString("en-US")}` : "-"],
-                        ["Projected Margin", item.analysis?.projectedMargin ? `EUR ${item.analysis.projectedMargin.toLocaleString("en-US")}` : "-"]
+                        ["Projected Margin", item.analysis?.projectedMargin ? `EUR ${item.analysis.projectedMargin.toLocaleString("en-US")}` : "-"],
+                        ["Target Buy", item.targetBuyPrice ? `EUR ${item.targetBuyPrice.toLocaleString("en-US")}` : "-"],
+                        ["Last Offer", item.latestOfferPrice ? `EUR ${item.latestOfferPrice.toLocaleString("en-US")}` : "-"],
+                        ["Counter", item.counterOfferPrice ? `EUR ${item.counterOfferPrice.toLocaleString("en-US")}` : "-"]
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-3xl bg-[var(--surface-muted)] p-4">
                           <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</p>
@@ -293,6 +306,55 @@ export default async function WatchlistPage() {
                             name="nextActionAt"
                             type="date"
                             defaultValue={item.nextActionAt ? item.nextActionAt.toISOString().slice(0, 10) : ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Offer status</span>
+                          <select
+                            name="offerStatus"
+                            defaultValue={item.offerStatus}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          >
+                            <option value="NONE">No offer</option>
+                            <option value="PREPARING">Preparing</option>
+                            <option value="OFFER_SENT">Offer sent</option>
+                            <option value="COUNTER_RECEIVED">Counter received</option>
+                            <option value="ACCEPTED">Accepted</option>
+                            <option value="REJECTED">Rejected</option>
+                          </select>
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Target buy price</span>
+                          <input
+                            name="targetBuyPrice"
+                            type="number"
+                            step="0.01"
+                            defaultValue={item.targetBuyPrice ?? ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Latest offer price</span>
+                          <input
+                            name="latestOfferPrice"
+                            type="number"
+                            step="0.01"
+                            defaultValue={item.latestOfferPrice ?? ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Counter offer price</span>
+                          <input
+                            name="counterOfferPrice"
+                            type="number"
+                            step="0.01"
+                            defaultValue={item.counterOfferPrice ?? ""}
                             className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
                           />
                         </label>

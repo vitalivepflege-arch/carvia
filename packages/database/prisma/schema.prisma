@@ -42,6 +42,15 @@ enum WatchlistPriority {
   HIGH
 }
 
+enum WatchlistOfferStatus {
+  NONE
+  PREPARING
+  OFFER_SENT
+  COUNTER_RECEIVED
+  ACCEPTED
+  REJECTED
+}
+
 enum TaskStatus {
   OPEN
   DONE
@@ -205,6 +214,11 @@ model Watchlist {
   note         String?
   stage        WatchlistStage    @default(NEW)
   priority     WatchlistPriority @default(MEDIUM)
+  offerStatus  WatchlistOfferStatus @default(NONE)
+  targetBuyPrice Decimal?        @db.Decimal(12, 2)
+  latestOfferPrice Decimal?      @db.Decimal(12, 2)
+  counterOfferPrice Decimal?     @db.Decimal(12, 2)
+  offerUpdatedAt DateTime?
   nextActionAt DateTime?
   activities   WatchlistActivity[]
   contacts     WatchlistContact[]

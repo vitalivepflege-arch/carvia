@@ -25,6 +25,7 @@ export function AppShell({
   companyName: string;
   openTaskCount: number;
   pipelineSummary: {
+    activeOfferCount: number;
     dueNowCount: number;
     highPriorityCount: number;
     negotiatingCount: number;
@@ -109,7 +110,7 @@ export function AppShell({
               { label: "Due Now", value: String(pipelineSummary.dueNowCount), delta: "Next actions due" },
               { label: "High Priority", value: String(pipelineSummary.highPriorityCount), delta: "Top acquisition focus" },
               { label: "Negotiating", value: String(pipelineSummary.negotiatingCount), delta: "Live buy conversations" },
-              { label: "Ready To Buy", value: String(pipelineSummary.readyToBuyCount), delta: "Near execution decisions" }
+              { label: "Active Offers", value: String(pipelineSummary.activeOfferCount), delta: "Negotiations in motion" }
             ].map((kpi) => (
               <Card key={kpi.label} title={kpi.label}>
                 <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{kpi.value}</p>

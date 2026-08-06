@@ -4,7 +4,13 @@ import { activityTypeLabels } from "../../lib/activities";
 import { createWatchlistActivity } from "../activities/actions";
 import { completeWatchlistTask, createWatchlistTask } from "../tasks/actions";
 import { requireOnboardedSession } from "../../lib/auth";
-import { getWatchlistItems, getWatchlistPipelineSummary, watchlistStageLabels, watchlistStageOrder } from "../../lib/watchlist";
+import {
+  getWatchlistItems,
+  getWatchlistPipelineSummary,
+  watchlistOfferStatusLabels,
+  watchlistStageLabels,
+  watchlistStageOrder
+} from "../../lib/watchlist";
 import { updateWatchlistWorkflow } from "../watchlist/actions";
 
 const priorityTone = {
@@ -28,6 +34,15 @@ const activityTone = {
   MEETING: "danger",
   MESSAGE: "info",
   NOTE: "info"
+} as const;
+
+const offerTone = {
+  ACCEPTED: "success",
+  COUNTER_RECEIVED: "warning",
+  NONE: "info",
+  OFFER_SENT: "warning",
+  PREPARING: "info",
+  REJECTED: "danger"
 } as const;
 
 function formatDate(value: Date | null) {
@@ -78,7 +93,7 @@ export default async function PipelinePage() {
             { label: "Due Now", value: String(pipelineSummary.dueNowCount), delta: `Actions due on or before ${dueDateLabel}` },
             { label: "High Priority", value: String(pipelineSummary.highPriorityCount), delta: "Immediate acquisition focus" },
             { label: "Negotiating", value: String(pipelineSummary.negotiatingCount), delta: "Active seller conversations" },
-            { label: "Open Tasks", value: String(pipelineSummary.openTaskCount), delta: "Team follow-ups in motion" }
+            { label: "Active Offers", value: String(pipelineSummary.activeOfferCount), delta: "Negotiations in motion" }
           ].map((metric) => (
             <Card key={metric.label} title={metric.label}>
               <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
@@ -151,6 +166,7 @@ export default async function PipelinePage() {
 
                         <div className="mt-4 flex flex-wrap gap-2">
                           <StatusPill tone="info">{item.vehicle.country ?? "EU stock"}</StatusPill>
+                          <StatusPill tone={offerTone[item.offerStatus]}>{watchlistOfferStatusLabels[item.offerStatus]}</StatusPill>
                           {item.analysis ? <StatusPill tone="success">Score {item.analysis.dealerScore ?? "-"}</StatusPill> : null}
                           {item.analysis ? <StatusPill tone="warning">Confidence {item.analysis.confidence ?? "-"}%</StatusPill> : null}
                         </div>
@@ -158,6 +174,27 @@ export default async function PipelinePage() {
                         <div className="mt-4 rounded-2xl bg-[var(--surface-muted)] p-3">
                           <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">Next action</p>
                           <p className="mt-2 text-sm font-medium text-[var(--navy)]">{formatDate(item.nextActionAt)}</p>
+                        </div>
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                          <div className="rounded-2xl bg-[var(--surface-muted)] p-3">
+                            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">Target Buy</p>
+                            <p className="mt-2 text-sm font-medium text-[var(--navy)]">
+                              {item.targetBuyPrice ? `EUR ${item.targetBuyPrice.toLocaleString("en-US")}` : "-"}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-[var(--surface-muted)] p-3">
+                            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">Last Offer</p>
+                            <p className="mt-2 text-sm font-medium text-[var(--navy)]">
+                              {item.latestOfferPrice ? `EUR ${item.latestOfferPrice.toLocaleString("en-US")}` : "-"}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-[var(--surface-muted)] p-3">
+                            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">Counter</p>
+                            <p className="mt-2 text-sm font-medium text-[var(--navy)]">
+                              {item.counterOfferPrice ? `EUR ${item.counterOfferPrice.toLocaleString("en-US")}` : "-"}
+                            </p>
+                          </div>
                         </div>
 
                         <div className="mt-4 rounded-2xl bg-[var(--surface-muted)] p-3">

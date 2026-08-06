@@ -16,9 +16,13 @@ const updateWatchlistNoteSchema = z.object({
 });
 
 const updateWatchlistWorkflowSchema = z.object({
+  counterOfferPrice: z.string().optional(),
+  latestOfferPrice: z.string().optional(),
   nextActionAt: z.string().optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH"]),
+  offerStatus: z.enum(["NONE", "PREPARING", "OFFER_SENT", "COUNTER_RECEIVED", "ACCEPTED", "REJECTED"]).optional(),
   stage: z.enum(["NEW", "REVIEWING", "NEGOTIATING", "READY_TO_BUY", "PASSED"]),
+  targetBuyPrice: z.string().optional(),
   watchlistId: z.string().min(1)
 });
 
@@ -96,9 +100,13 @@ export async function updateWatchlistNote(formData: FormData) {
 export async function updateWatchlistWorkflow(formData: FormData) {
   const session = await requireOnboardedSession();
   const parsed = updateWatchlistWorkflowSchema.parse({
+    counterOfferPrice: readOptionalString(formData, "counterOfferPrice"),
+    latestOfferPrice: readOptionalString(formData, "latestOfferPrice"),
     nextActionAt: readOptionalString(formData, "nextActionAt"),
+    offerStatus: readOptionalString(formData, "offerStatus"),
     priority: formData.get("priority"),
     stage: formData.get("stage"),
+    targetBuyPrice: readOptionalString(formData, "targetBuyPrice"),
     watchlistId: formData.get("watchlistId")
   });
 
@@ -108,13 +116,22 @@ export async function updateWatchlistWorkflow(formData: FormData) {
       companyId: session.user.companyId!
     },
     data: {
+      counterOfferPrice: parsed.counterOfferPrice ? Number(parsed.counterOfferPrice) : null,
+      latestOfferPrice: parsed.latestOfferPrice ? Number(parsed.latestOfferPrice) : null,
       nextActionAt: parsed.nextActionAt ? new Date(`${parsed.nextActionAt}T00:00:00.000Z`) : null,
+      offerStatus: parsed.offerStatus ?? undefined,
+      offerUpdatedAt:
+        parsed.offerStatus || parsed.targetBuyPrice || parsed.latestOfferPrice || parsed.counterOfferPrice
+          ? new Date()
+          : undefined,
       priority: parsed.priority,
-      stage: parsed.stage
+      stage: parsed.stage,
+      targetBuyPrice: parsed.targetBuyPrice ? Number(parsed.targetBuyPrice) : null
     }
   });
 
   revalidatePath("/");
+  revalidatePath("/offers");
   revalidatePath("/pipeline");
   revalidatePath("/watchlist");
 }

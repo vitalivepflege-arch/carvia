@@ -10,6 +10,15 @@ export const watchlistStageLabels: Record<(typeof watchlistStageOrder)[number], 
   REVIEWING: "Reviewing"
 };
 
+export const watchlistOfferStatusLabels = {
+  ACCEPTED: "Accepted",
+  COUNTER_RECEIVED: "Counter received",
+  NONE: "No offer",
+  OFFER_SENT: "Offer sent",
+  PREPARING: "Preparing",
+  REJECTED: "Rejected"
+} as const;
+
 export async function getWatchlistItems(companyId: string) {
   const items = await prisma.watchlist.findMany({
     where: { companyId },
@@ -154,8 +163,11 @@ export async function getWatchlistItems(companyId: string) {
     .map((item) => ({
       ...item,
       analysis: latestAnalysisByVehicle.get(item.vehicleId) ?? null,
+      counterOfferPrice: item.counterOfferPrice ? Number(item.counterOfferPrice) : null,
       contacts: contactsByWatchlist.get(item.id) ?? [],
+      latestOfferPrice: item.latestOfferPrice ? Number(item.latestOfferPrice) : null,
       recentActivities: activitiesByWatchlist.get(item.id) ?? [],
+      targetBuyPrice: item.targetBuyPrice ? Number(item.targetBuyPrice) : null,
       openTasks: tasksByWatchlist.get(item.id) ?? [],
       vehicle: vehicleMap.get(item.vehicleId) ?? null
     }))
@@ -194,6 +206,7 @@ export async function getWatchlistPipelineSummary(companyId: string) {
       select: {
         id: true,
         nextActionAt: true,
+        offerStatus: true,
         priority: true,
         stage: true
       }
@@ -210,6 +223,7 @@ export async function getWatchlistPipelineSummary(companyId: string) {
     dueNowCount: items.filter((item) => item.nextActionAt && item.nextActionAt <= new Date()).length,
     highPriorityCount: items.filter((item) => item.priority === "HIGH").length,
     negotiatingCount: items.filter((item) => item.stage === "NEGOTIATING").length,
+    activeOfferCount: items.filter((item) => item.offerStatus === "OFFER_SENT" || item.offerStatus === "COUNTER_RECEIVED").length,
     readyToBuyCount: items.filter((item) => item.stage === "READY_TO_BUY").length,
     openTaskCount
   };
