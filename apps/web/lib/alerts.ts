@@ -6,6 +6,25 @@ const mockVehicleProvider = new MockVehicleProvider();
 
 type AlertSeverity = "info" | "success" | "warning";
 
+export async function getNotificationPreference(companyId: string) {
+  const preference = await prisma.notificationPreference.findUnique({
+    where: { companyId }
+  });
+
+  return (
+    preference ?? {
+      companyId,
+      createdAt: new Date("2026-08-06T00:00:00.000Z"),
+      deliveryChannel: "IN_APP",
+      digestEnabled: true,
+      id: "notification-default",
+      recipientEmail: null,
+      sendHourLocal: 8,
+      updatedAt: new Date("2026-08-06T00:00:00.000Z")
+    }
+  );
+}
+
 export async function getAlertCenter(companyId: string) {
   const [savedSearches, watchlistItems] = await Promise.all([
     getSavedSearches(companyId),
@@ -112,4 +131,45 @@ export async function getAlertCenter(companyId: string) {
       searchSignalCount: searchAlerts.filter((alert) => alert.delta > 0).length
     }
   };
+}
+
+export function buildAlertDigestPreview(input: Awaited<ReturnType<typeof getAlertCenter>>) {
+  const lines = [
+    "Carvia Daily Digest - Thursday, August 6, 2026",
+    "",
+    `Actionable alerts: ${input.summary.actionableCount}`,
+    `Due today: ${input.summary.dueTodayCount}`,
+    `Search signals: ${input.summary.searchSignalCount}`,
+    `Ready signals: ${input.summary.readyToBuyCount}`,
+    ""
+  ];
+
+  if (input.searchAlerts.length > 0) {
+    lines.push("Saved search changes:");
+    for (const alert of input.searchAlerts.slice(0, 3)) {
+      lines.push(
+        `- ${alert.name}: ${alert.delta > 0 ? `+${alert.delta} new matches` : `${alert.currentResultCount} total matches`}`
+      );
+    }
+    lines.push("");
+  }
+
+  if (input.duePipelineAlerts.length > 0) {
+    lines.push("Due pipeline actions:");
+    for (const alert of input.duePipelineAlerts.slice(0, 3)) {
+      const vehicleLabel = alert.vehicle ? `${alert.vehicle.make} ${alert.vehicle.model}` : "Tracked vehicle";
+      lines.push(`- ${vehicleLabel}: ${alert.stage.toLowerCase()} | ${alert.priority.toLowerCase()} priority`);
+    }
+    lines.push("");
+  }
+
+  if (input.readyToBuyAlerts.length > 0) {
+    lines.push("Execution candidates:");
+    for (const alert of input.readyToBuyAlerts.slice(0, 3)) {
+      const vehicleLabel = alert.vehicle ? `${alert.vehicle.make} ${alert.vehicle.model}` : "Tracked vehicle";
+      lines.push(`- ${vehicleLabel}: ${alert.stage.toLowerCase()}`);
+    }
+  }
+
+  return lines.join("\n").trim();
 }

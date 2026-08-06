@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Card, StatusPill } from "@carvia/ui";
+import { buildAlertDigestPreview, getAlertCenter, getNotificationPreference } from "../../lib/alerts";
 import { requireOnboardedSession } from "../../lib/auth";
-import { getAlertCenter } from "../../lib/alerts";
+import { saveNotificationPreference } from "./actions";
 
 const severityTone = {
   info: "info",
@@ -25,7 +26,11 @@ function formatStage(stage: string) {
 
 export default async function AlertsPage() {
   const session = await requireOnboardedSession();
-  const alertCenter = await getAlertCenter(session.user.companyId!);
+  const [alertCenter, notificationPreference] = await Promise.all([
+    getAlertCenter(session.user.companyId!),
+    getNotificationPreference(session.user.companyId!)
+  ]);
+  const digestPreview = buildAlertDigestPreview(alertCenter);
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#faf8f3_0%,#eff0eb_100%)] px-6 py-10">
@@ -50,6 +55,77 @@ export default async function AlertsPage() {
               <p className="mt-2 text-sm text-[var(--foreground-muted)]">{item.delta}</p>
             </Card>
           ))}
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+          <Card title="Digest Preferences">
+            <form action={saveNotificationPreference} className="mt-5 space-y-4">
+              <label className="flex items-center gap-3 text-sm text-[var(--navy)]">
+                <input
+                  defaultChecked={notificationPreference.digestEnabled}
+                  name="digestEnabled"
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-[var(--border)]"
+                />
+                Enable daily digest for this company
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-[var(--navy)]">Delivery mode</span>
+                <select
+                  name="deliveryChannel"
+                  defaultValue={notificationPreference.deliveryChannel}
+                  className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3"
+                >
+                  <option value="IN_APP">In-app digest</option>
+                  <option value="EMAIL_READY">Email-ready digest</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-[var(--navy)]">Recipient email</span>
+                <input
+                  name="recipientEmail"
+                  defaultValue={notificationPreference.recipientEmail ?? ""}
+                  placeholder="buyer-team@example.com"
+                  className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-[var(--navy)]">Digest hour (local)</span>
+                <input
+                  name="sendHourLocal"
+                  type="number"
+                  min={6}
+                  max={22}
+                  defaultValue={notificationPreference.sendHourLocal}
+                  className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3"
+                />
+              </label>
+
+              <button
+                type="submit"
+                className="rounded-full bg-[var(--navy)] px-5 py-3 text-sm font-semibold text-white"
+              >
+                Save digest preferences
+              </button>
+            </form>
+          </Card>
+
+          <Card title="Digest Preview">
+            <div className="mt-5 space-y-4">
+              <StatusPill tone={notificationPreference.digestEnabled ? "success" : "warning"}>
+                {notificationPreference.digestEnabled ? "Digest active" : "Digest paused"}
+              </StatusPill>
+              <div className="rounded-3xl border border-[var(--border)] bg-white p-4">
+                <pre className="whitespace-pre-wrap font-mono text-sm text-[var(--foreground)]">{digestPreview}</pre>
+              </div>
+              <p className="text-sm text-[var(--foreground-muted)]">
+                This preview reflects the current in-app alert state on Thursday, August 6, 2026 and can later back email or external delivery.
+              </p>
+            </div>
+          </Card>
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
