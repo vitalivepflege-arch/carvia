@@ -51,6 +51,15 @@ enum WatchlistOfferStatus {
   REJECTED
 }
 
+enum WatchlistClosingStatus {
+  NONE
+  PAPERWORK_PENDING
+  PAYMENT_PENDING
+  TRANSPORT_BOOKED
+  COMPLETED
+  CANCELLED
+}
+
 enum TaskStatus {
   OPEN
   DONE
@@ -219,6 +228,12 @@ model Watchlist {
   latestOfferPrice Decimal?      @db.Decimal(12, 2)
   counterOfferPrice Decimal?     @db.Decimal(12, 2)
   offerUpdatedAt DateTime?
+  closingStatus WatchlistClosingStatus @default(NONE)
+  closingTargetDate DateTime?
+  paperworkCompletedAt DateTime?
+  paymentCompletedAt DateTime?
+  handoffCompletedAt DateTime?
+  closingUpdatedAt DateTime?
   nextActionAt DateTime?
   activities   WatchlistActivity[]
   contacts     WatchlistContact[]

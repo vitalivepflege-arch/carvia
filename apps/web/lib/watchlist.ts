@@ -19,6 +19,15 @@ export const watchlistOfferStatusLabels = {
   REJECTED: "Rejected"
 } as const;
 
+export const watchlistClosingStatusLabels = {
+  CANCELLED: "Cancelled",
+  COMPLETED: "Completed",
+  NONE: "No closing",
+  PAPERWORK_PENDING: "Paperwork pending",
+  PAYMENT_PENDING: "Payment pending",
+  TRANSPORT_BOOKED: "Transport booked"
+} as const;
+
 export async function getWatchlistItems(companyId: string) {
   const items = await prisma.watchlist.findMany({
     where: { companyId },
@@ -164,8 +173,13 @@ export async function getWatchlistItems(companyId: string) {
       ...item,
       analysis: latestAnalysisByVehicle.get(item.vehicleId) ?? null,
       counterOfferPrice: item.counterOfferPrice ? Number(item.counterOfferPrice) : null,
+      closingTargetDate: item.closingTargetDate,
+      closingUpdatedAt: item.closingUpdatedAt,
       contacts: contactsByWatchlist.get(item.id) ?? [],
+      handoffCompletedAt: item.handoffCompletedAt,
       latestOfferPrice: item.latestOfferPrice ? Number(item.latestOfferPrice) : null,
+      paperworkCompletedAt: item.paperworkCompletedAt,
+      paymentCompletedAt: item.paymentCompletedAt,
       recentActivities: activitiesByWatchlist.get(item.id) ?? [],
       targetBuyPrice: item.targetBuyPrice ? Number(item.targetBuyPrice) : null,
       openTasks: tasksByWatchlist.get(item.id) ?? [],
@@ -204,6 +218,7 @@ export async function getWatchlistPipelineSummary(companyId: string) {
     prisma.watchlist.findMany({
       where: { companyId },
       select: {
+        closingStatus: true,
         id: true,
         nextActionAt: true,
         offerStatus: true,
@@ -224,6 +239,12 @@ export async function getWatchlistPipelineSummary(companyId: string) {
     highPriorityCount: items.filter((item) => item.priority === "HIGH").length,
     negotiatingCount: items.filter((item) => item.stage === "NEGOTIATING").length,
     activeOfferCount: items.filter((item) => item.offerStatus === "OFFER_SENT" || item.offerStatus === "COUNTER_RECEIVED").length,
+    activeClosingCount: items.filter(
+      (item) =>
+        item.closingStatus === "PAPERWORK_PENDING" ||
+        item.closingStatus === "PAYMENT_PENDING" ||
+        item.closingStatus === "TRANSPORT_BOOKED"
+    ).length,
     readyToBuyCount: items.filter((item) => item.stage === "READY_TO_BUY").length,
     openTaskCount
   };

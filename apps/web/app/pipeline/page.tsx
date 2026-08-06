@@ -7,6 +7,7 @@ import { requireOnboardedSession } from "../../lib/auth";
 import {
   getWatchlistItems,
   getWatchlistPipelineSummary,
+  watchlistClosingStatusLabels,
   watchlistOfferStatusLabels,
   watchlistStageLabels,
   watchlistStageOrder
@@ -43,6 +44,15 @@ const offerTone = {
   OFFER_SENT: "warning",
   PREPARING: "info",
   REJECTED: "danger"
+} as const;
+
+const closingTone = {
+  CANCELLED: "danger",
+  COMPLETED: "success",
+  NONE: "info",
+  PAPERWORK_PENDING: "warning",
+  PAYMENT_PENDING: "warning",
+  TRANSPORT_BOOKED: "info"
 } as const;
 
 function formatDate(value: Date | null) {
@@ -93,7 +103,7 @@ export default async function PipelinePage() {
             { label: "Due Now", value: String(pipelineSummary.dueNowCount), delta: `Actions due on or before ${dueDateLabel}` },
             { label: "High Priority", value: String(pipelineSummary.highPriorityCount), delta: "Immediate acquisition focus" },
             { label: "Negotiating", value: String(pipelineSummary.negotiatingCount), delta: "Active seller conversations" },
-            { label: "Active Offers", value: String(pipelineSummary.activeOfferCount), delta: "Negotiations in motion" }
+            { label: "Active Closings", value: String(pipelineSummary.activeClosingCount), delta: "Paperwork, payment, transport" }
           ].map((metric) => (
             <Card key={metric.label} title={metric.label}>
               <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
@@ -167,6 +177,7 @@ export default async function PipelinePage() {
                         <div className="mt-4 flex flex-wrap gap-2">
                           <StatusPill tone="info">{item.vehicle.country ?? "EU stock"}</StatusPill>
                           <StatusPill tone={offerTone[item.offerStatus]}>{watchlistOfferStatusLabels[item.offerStatus]}</StatusPill>
+                          <StatusPill tone={closingTone[item.closingStatus]}>{watchlistClosingStatusLabels[item.closingStatus]}</StatusPill>
                           {item.analysis ? <StatusPill tone="success">Score {item.analysis.dealerScore ?? "-"}</StatusPill> : null}
                           {item.analysis ? <StatusPill tone="warning">Confidence {item.analysis.confidence ?? "-"}%</StatusPill> : null}
                         </div>
@@ -193,6 +204,12 @@ export default async function PipelinePage() {
                             <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">Counter</p>
                             <p className="mt-2 text-sm font-medium text-[var(--navy)]">
                               {item.counterOfferPrice ? `EUR ${item.counterOfferPrice.toLocaleString("en-US")}` : "-"}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-[var(--surface-muted)] p-3">
+                            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">Closing Target</p>
+                            <p className="mt-2 text-sm font-medium text-[var(--navy)]">
+                              {formatDate(item.closingTargetDate)}
                             </p>
                           </div>
                         </div>

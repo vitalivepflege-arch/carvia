@@ -6,7 +6,12 @@ import { createWatchlistActivity, deleteWatchlistActivity } from "../activities/
 import { createWatchlistContact, deleteWatchlistContact } from "../contacts/actions";
 import { completeWatchlistTask, createWatchlistTask } from "../tasks/actions";
 import { requireOnboardedSession } from "../../lib/auth";
-import { getWatchlistItems, getWatchlistPipelineSummary, watchlistOfferStatusLabels } from "../../lib/watchlist";
+import {
+  getWatchlistItems,
+  getWatchlistPipelineSummary,
+  watchlistClosingStatusLabels,
+  watchlistOfferStatusLabels
+} from "../../lib/watchlist";
 import { removeWatchlistItem, updateWatchlistNote, updateWatchlistWorkflow } from "./actions";
 
 const priorityTone = {
@@ -45,6 +50,15 @@ const offerTone = {
   OFFER_SENT: "warning",
   PREPARING: "info",
   REJECTED: "danger"
+} as const;
+
+const closingTone = {
+  CANCELLED: "danger",
+  COMPLETED: "success",
+  NONE: "info",
+  PAPERWORK_PENDING: "warning",
+  PAYMENT_PENDING: "warning",
+  TRANSPORT_BOOKED: "info"
 } as const;
 
 function formatStage(stage: string) {
@@ -87,7 +101,7 @@ export default async function WatchlistPage() {
             { label: "Due Now", value: String(pipelineSummary.dueNowCount), delta: `Actions due on or before ${dueDateLabel}` },
             { label: "High Priority", value: String(pipelineSummary.highPriorityCount), delta: "Urgent opportunities" },
             { label: "Negotiating", value: String(pipelineSummary.negotiatingCount), delta: "Deals in conversation" },
-            { label: "Active Offers", value: String(pipelineSummary.activeOfferCount), delta: "Negotiations in motion" }
+            { label: "Active Closings", value: String(pipelineSummary.activeClosingCount), delta: "Paperwork, payment, transport" }
           ].map((metric) => (
             <Card key={metric.label} title={metric.label}>
               <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
@@ -116,6 +130,7 @@ export default async function WatchlistPage() {
                       <StatusPill tone={stageTone[item.stage]}>{formatStage(item.stage)}</StatusPill>
                       <StatusPill tone={priorityTone[item.priority]}>{item.priority} Priority</StatusPill>
                       <StatusPill tone={offerTone[item.offerStatus]}>{watchlistOfferStatusLabels[item.offerStatus]}</StatusPill>
+                      <StatusPill tone={closingTone[item.closingStatus]}>{watchlistClosingStatusLabels[item.closingStatus]}</StatusPill>
                       {item.analysis ? (
                         <>
                           <StatusPill tone="success">Score {item.analysis.dealerScore ?? "-"}</StatusPill>
@@ -134,7 +149,8 @@ export default async function WatchlistPage() {
                         ["Projected Margin", item.analysis?.projectedMargin ? `EUR ${item.analysis.projectedMargin.toLocaleString("en-US")}` : "-"],
                         ["Target Buy", item.targetBuyPrice ? `EUR ${item.targetBuyPrice.toLocaleString("en-US")}` : "-"],
                         ["Last Offer", item.latestOfferPrice ? `EUR ${item.latestOfferPrice.toLocaleString("en-US")}` : "-"],
-                        ["Counter", item.counterOfferPrice ? `EUR ${item.counterOfferPrice.toLocaleString("en-US")}` : "-"]
+                        ["Counter", item.counterOfferPrice ? `EUR ${item.counterOfferPrice.toLocaleString("en-US")}` : "-"],
+                        ["Closing Target", item.closingTargetDate ? item.closingTargetDate.toLocaleDateString("en-US", { dateStyle: "medium" }) : "-"]
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-3xl bg-[var(--surface-muted)] p-4">
                           <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</p>
@@ -150,6 +166,21 @@ export default async function WatchlistPage() {
                           ? item.nextActionAt.toLocaleDateString("en-US", { dateStyle: "long" })
                           : "Not scheduled yet"}
                       </p>
+                    </div>
+
+                    <div className="rounded-3xl bg-[var(--surface-muted)] p-4">
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        {[
+                          ["Paperwork", item.paperworkCompletedAt ? item.paperworkCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
+                          ["Payment", item.paymentCompletedAt ? item.paymentCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
+                          ["Handoff", item.handoffCompletedAt ? item.handoffCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"]
+                        ].map(([label, value]) => (
+                          <div key={label} className="rounded-2xl border border-[var(--border)] bg-white p-3">
+                            <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">{label}</p>
+                            <p className="mt-2 text-sm text-[var(--navy)]">{value}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="rounded-3xl bg-[var(--surface-muted)] p-4">
@@ -327,6 +358,22 @@ export default async function WatchlistPage() {
                         </label>
 
                         <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Closing status</span>
+                          <select
+                            name="closingStatus"
+                            defaultValue={item.closingStatus}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          >
+                            <option value="NONE">No closing</option>
+                            <option value="PAPERWORK_PENDING">Paperwork pending</option>
+                            <option value="PAYMENT_PENDING">Payment pending</option>
+                            <option value="TRANSPORT_BOOKED">Transport booked</option>
+                            <option value="COMPLETED">Completed</option>
+                            <option value="CANCELLED">Cancelled</option>
+                          </select>
+                        </label>
+
+                        <label className="block">
                           <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Target buy price</span>
                           <input
                             name="targetBuyPrice"
@@ -355,6 +402,46 @@ export default async function WatchlistPage() {
                             type="number"
                             step="0.01"
                             defaultValue={item.counterOfferPrice ?? ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Closing target date</span>
+                          <input
+                            name="closingTargetDate"
+                            type="date"
+                            defaultValue={item.closingTargetDate ? item.closingTargetDate.toISOString().slice(0, 10) : ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Paperwork completed</span>
+                          <input
+                            name="paperworkCompletedAt"
+                            type="date"
+                            defaultValue={item.paperworkCompletedAt ? item.paperworkCompletedAt.toISOString().slice(0, 10) : ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Payment completed</span>
+                          <input
+                            name="paymentCompletedAt"
+                            type="date"
+                            defaultValue={item.paymentCompletedAt ? item.paymentCompletedAt.toISOString().slice(0, 10) : ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Handoff completed</span>
+                          <input
+                            name="handoffCompletedAt"
+                            type="date"
+                            defaultValue={item.handoffCompletedAt ? item.handoffCompletedAt.toISOString().slice(0, 10) : ""}
                             className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
                           />
                         </label>

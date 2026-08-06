@@ -38,6 +38,12 @@ export default async function OffersPage() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
+              href="/closings"
+              className="rounded-full border border-[var(--border)] bg-white px-5 py-3 text-sm font-semibold text-[var(--navy)]"
+            >
+              Open closings
+            </Link>
+            <Link
               href="/pipeline"
               className="rounded-full border border-[var(--border)] bg-white px-5 py-3 text-sm font-semibold text-[var(--navy)]"
             >
