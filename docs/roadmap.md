@@ -30,14 +30,12 @@
 ## Phase 4
 
 - csv/json import
-- normalization pipeline
 - saved searches
 - alerts
 - recurring sourcing review workflows
 
 ## Phase 5
 
-- import pipeline
 - normalization safety rails
 - deeper comparables engine
 - market position visuals

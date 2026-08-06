@@ -96,8 +96,24 @@ export const dealerScoreBreakdownSchema = z.object({
   overallScore: z.number().min(0).max(100)
 });
 
+export const importVehicleRowSchema = z.object({
+  firstRegistration: z.string().min(7).max(7).nullable(),
+  fuelType: z.string().min(3).nullable(),
+  listingUrl: z.string().url().nullable(),
+  make: z.string().min(2),
+  mileageKm: z.number().int().nonnegative().nullable(),
+  model: z.string().min(1),
+  postalCode: z.string().nullable(),
+  powerHp: z.number().int().nonnegative().nullable(),
+  priceGross: z.number().nonnegative().nullable(),
+  providerVehicleId: z.string().min(1),
+  transmission: z.string().nullable(),
+  variant: z.string().nullable()
+});
+
 export type AnalysisInputs = z.infer<typeof analysisInputsSchema>;
 export type DealerScoreBreakdown = z.infer<typeof dealerScoreBreakdownSchema>;
+export type ImportVehicleRow = z.infer<typeof importVehicleRowSchema>;
 export type MarketSummary = z.infer<typeof marketSummarySchema>;
 export type ProviderStatus = z.infer<typeof providerStatusSchema>;
 export type SellerType = z.infer<typeof sellerTypeSchema>;
@@ -134,4 +150,3 @@ export interface DealerScoreService {
     marketPosition: number;
   }): Promise<DealerScoreBreakdown>;
 }
-

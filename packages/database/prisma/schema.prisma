@@ -65,6 +65,7 @@ model Company {
   analyses             VehicleAnalysis[]
   watchlistItems       Watchlist[]
   savedSearches        SavedSearch[]
+  importRuns           ImportRun[]
   providers            ProviderCredential[]
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
@@ -119,6 +120,7 @@ model Vehicle {
   updatedAt         DateTime               @updatedAt
 
   @@index([provider, providerVehicleId])
+  @@unique([provider, providerVehicleId])
   @@index([make, model])
 }
 
@@ -202,6 +204,21 @@ model SavedSearch {
   lastRunResultCount Int?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  @@index([companyId, createdAt])
+}
+
+model ImportRun {
+  id            String   @id @default(cuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sourceType    String
+  fileName      String?
+  rowCount      Int
+  importedCount Int
+  skippedCount  Int
+  warnings      Json
+  createdAt     DateTime @default(now())
 
   @@index([companyId, createdAt])
 }
