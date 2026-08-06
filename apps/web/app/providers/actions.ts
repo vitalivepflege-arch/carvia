@@ -66,6 +66,10 @@ export async function markProviderSync(formData: FormData) {
     providerKey: formData.get("providerKey")
   });
 
+  const syncTime = new Date("2026-08-06T08:00:00.000Z");
+  const mockImportedCount =
+    parsed.providerKey === "mobile-de" ? 12 : parsed.providerKey === "autoscout24" ? 8 : 1;
+
   await prisma.providerCredential.upsert({
     where: {
       companyId_providerKey: {
@@ -74,13 +78,23 @@ export async function markProviderSync(formData: FormData) {
       }
     },
     update: {
-      lastSyncAt: new Date()
+      lastSyncAt: syncTime
     },
     create: {
       companyId: session.user.companyId!,
       providerKey: parsed.providerKey,
       status: "CONNECTED",
-      lastSyncAt: new Date()
+      lastSyncAt: syncTime
+    }
+  });
+
+  await prisma.providerSyncRun.create({
+    data: {
+      companyId: session.user.companyId!,
+      importedCount: mockImportedCount,
+      message: `Manual sync recorded on August 6, 2026 for ${parsed.providerKey}.`,
+      providerKey: parsed.providerKey,
+      status: "SUCCESS"
     }
   });
 
@@ -97,6 +111,16 @@ export async function resetProviderCredential(formData: FormData) {
     where: {
       companyId: session.user.companyId!,
       providerKey: parsed.providerKey
+    }
+  });
+
+  await prisma.providerSyncRun.create({
+    data: {
+      companyId: session.user.companyId!,
+      importedCount: 0,
+      message: `Provider setup reset on August 6, 2026.`,
+      providerKey: parsed.providerKey,
+      status: "RESET"
     }
   });
 

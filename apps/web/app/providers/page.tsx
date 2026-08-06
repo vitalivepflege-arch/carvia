@@ -10,6 +10,11 @@ const statusTone = {
   NOT_CONFIGURED: "info"
 } as const;
 
+const runTone = {
+  RESET: "warning",
+  SUCCESS: "success"
+} as const;
+
 export default async function ProvidersPage() {
   const session = await requireOnboardedSession();
   const providers = await getProviderOverview(session.user.companyId!);
@@ -113,7 +118,7 @@ export default async function ProvidersPage() {
                             type="submit"
                             className="w-full rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
                           >
-                            Mark sync now
+                            Run sync now
                           </button>
                         </form>
 
@@ -129,6 +134,41 @@ export default async function ProvidersPage() {
                       </div>
                     </div>
                   )}
+
+                  <div className="rounded-3xl border border-[var(--border)] bg-white p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Recent sync runs</p>
+                    <div className="mt-4 space-y-3">
+                      {provider.recentRuns.length === 0 ? (
+                        <p className="text-sm text-[var(--foreground-muted)]">
+                          No sync events recorded yet for Thursday, August 6, 2026.
+                        </p>
+                      ) : (
+                        provider.recentRuns.slice(0, 4).map((run) => (
+                          <div
+                            key={run.id}
+                            className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-4"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-medium text-[var(--navy)]">
+                                  {run.importedCount} imported
+                                </p>
+                                <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                                  {run.createdAt.toLocaleString("de-DE")}
+                                </p>
+                              </div>
+                              <StatusPill tone={runTone[run.status as keyof typeof runTone] ?? "info"}>
+                                {run.status}
+                              </StatusPill>
+                            </div>
+                            <p className="mt-3 text-sm text-[var(--foreground)]">
+                              {run.message ?? "No sync message recorded."}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
               </Card>
             );
