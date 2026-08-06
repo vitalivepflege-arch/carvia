@@ -59,24 +59,59 @@ export async function getProviderOverview(companyId: string) {
       return {
         credentialsHint: mockHealth.message ?? "Mock inventory is available.",
         displayName: provider.displayName,
+        cadenceHours: null,
         lastSyncAt: mockHealth.lastSyncAt ?? null,
+        nextSyncAt: null,
         recentRuns: providerRuns,
         providerKey: provider.providerKey,
         status: mockHealth.status,
+        syncMode: "MANUAL" as const,
         type: provider.type
       };
     }
 
       return {
+        cadenceHours: credential?.cadenceHours ?? null,
         credentialsHint:
           credential?.credentialsHint ??
           "Credentials not configured yet. Adapter stays disabled until explicit approval and official access exist.",
         displayName: provider.displayName,
         lastSyncAt: credential?.lastSyncAt ?? null,
+        nextSyncAt: credential?.nextSyncAt ?? null,
         recentRuns: providerRuns,
         providerKey: provider.providerKey,
         status: credential?.status ?? "NOT_CONFIGURED",
+        syncMode: credential?.syncMode ?? "MANUAL",
         type: provider.type
       };
   });
+}
+
+export async function getProviderControlSummary(companyId: string) {
+  const credentials = await prisma.providerCredential.findMany({
+    where: { companyId },
+    select: {
+      providerKey: true,
+      status: true,
+      syncMode: true,
+      nextSyncAt: true
+    }
+  });
+
+  const dueSyncCount = credentials.filter(
+    (credential) =>
+      credential.status === "CONNECTED" &&
+      credential.syncMode === "SCHEDULED" &&
+      credential.nextSyncAt &&
+      credential.nextSyncAt <= new Date()
+  ).length;
+
+  const scheduledCount = credentials.filter((credential) => credential.syncMode === "SCHEDULED").length;
+  const connectedCount = credentials.filter((credential) => credential.status === "CONNECTED").length;
+
+  return {
+    connectedCount,
+    dueSyncCount,
+    scheduledCount
+  };
 }

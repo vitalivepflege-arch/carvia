@@ -1,6 +1,6 @@
 import { Card, StatusPill } from "@carvia/ui";
 import { requireOnboardedSession } from "../../lib/auth";
-import { getProviderOverview } from "../../lib/providers";
+import { getProviderControlSummary, getProviderOverview } from "../../lib/providers";
 import { markProviderSync, resetProviderCredential, upsertProviderCredential } from "./actions";
 
 const statusTone = {
@@ -17,7 +17,11 @@ const runTone = {
 
 export default async function ProvidersPage() {
   const session = await requireOnboardedSession();
-  const providers = await getProviderOverview(session.user.companyId!);
+  const [providers, controlSummary] = await Promise.all([
+    getProviderOverview(session.user.companyId!),
+    getProviderControlSummary(session.user.companyId!)
+  ]);
+  const todayLabel = new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(new Date());
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#faf8f3_0%,#eff0eb_100%)] px-6 py-10">
@@ -28,6 +32,20 @@ export default async function ProvidersPage() {
           <p className="mt-2 max-w-3xl text-sm text-[var(--foreground-muted)]">
             Carvia keeps every live data source behind explicit provider boundaries. Mock mode stays available for local development, while external sources remain disabled until credentials and compliance approval are in place.
           </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: "Connected", value: String(controlSummary.connectedCount), delta: "Providers marked connected" },
+            { label: "Scheduled", value: String(controlSummary.scheduledCount), delta: "Cadence-driven sync setups" },
+            { label: "Due Now", value: String(controlSummary.dueSyncCount), delta: `Scheduled runs due on or before ${todayLabel}` },
+            { label: "Catalog", value: String(providers.length), delta: "Known adapter boundaries" }
+          ].map((metric) => (
+            <Card key={metric.label} title={metric.label}>
+              <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
+              <p className="mt-2 text-sm text-[var(--foreground-muted)]">{metric.delta}</p>
+            </Card>
+          ))}
         </div>
 
         <div className="grid gap-5 xl:grid-cols-2">
@@ -58,9 +76,9 @@ export default async function ProvidersPage() {
                       </p>
                     </div>
                     <div className="rounded-3xl border border-[var(--border)] bg-white p-4">
-                      <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Policy</p>
+                      <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Next sync</p>
                       <p className="mt-2 text-sm font-medium text-[var(--navy)]">
-                        {isMock ? "Safe for local MVP testing" : "Manual enablement required"}
+                        {provider.nextSyncAt ? new Date(provider.nextSyncAt).toLocaleString("de-DE") : isMock ? "Mock provider" : "Not scheduled"}
                       </p>
                     </div>
                   </div>
@@ -89,6 +107,31 @@ export default async function ProvidersPage() {
                               <option value="DISABLED">Disabled</option>
                               <option value="ERROR">Error</option>
                             </select>
+                          </label>
+
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-medium text-[var(--navy)]">Sync mode</span>
+                            <select
+                              name="syncMode"
+                              defaultValue={provider.syncMode}
+                              className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3"
+                            >
+                              <option value="MANUAL">Manual only</option>
+                              <option value="SCHEDULED">Scheduled cadence</option>
+                              <option value="PAUSED">Paused</option>
+                            </select>
+                          </label>
+
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-medium text-[var(--navy)]">Cadence hours</span>
+                            <input
+                              name="cadenceHours"
+                              type="number"
+                              min={1}
+                              max={168}
+                              defaultValue={provider.cadenceHours ?? 24}
+                              className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3"
+                            />
                           </label>
 
                           <label className="block">
@@ -140,7 +183,7 @@ export default async function ProvidersPage() {
                     <div className="mt-4 space-y-3">
                       {provider.recentRuns.length === 0 ? (
                         <p className="text-sm text-[var(--foreground-muted)]">
-                          No sync events recorded yet for Thursday, August 6, 2026.
+                          No sync events recorded yet for {todayLabel}.
                         </p>
                       ) : (
                         provider.recentRuns.slice(0, 4).map((run) => (

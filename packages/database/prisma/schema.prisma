@@ -22,6 +22,12 @@ enum ProviderStatus {
   ERROR
 }
 
+enum ProviderSyncMode {
+  MANUAL
+  SCHEDULED
+  PAUSED
+}
+
 enum WatchlistStage {
   NEW
   REVIEWING
@@ -214,6 +220,9 @@ model ProviderCredential {
   company         Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   providerKey     String
   status          ProviderStatus @default(NOT_CONFIGURED)
+  syncMode        ProviderSyncMode @default(MANUAL)
+  cadenceHours    Int?
+  nextSyncAt      DateTime?
   credentialsHint String?
   lastSyncAt      DateTime?
   createdAt       DateTime       @default(now())
