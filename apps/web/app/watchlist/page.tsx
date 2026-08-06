@@ -28,6 +28,7 @@ function formatStage(stage: string) {
 
 export default async function WatchlistPage() {
   const session = await requireOnboardedSession();
+  const dueDateLabel = new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(new Date());
   const [items, pipelineSummary] = await Promise.all([
     getWatchlistItems(session.user.companyId!),
     getWatchlistPipelineSummary(session.user.companyId!)
@@ -54,7 +55,7 @@ export default async function WatchlistPage() {
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
-            { label: "Due Now", value: String(pipelineSummary.dueNowCount), delta: "Actions due on or before August 6, 2026" },
+            { label: "Due Now", value: String(pipelineSummary.dueNowCount), delta: `Actions due on or before ${dueDateLabel}` },
             { label: "High Priority", value: String(pipelineSummary.highPriorityCount), delta: "Urgent opportunities" },
             { label: "Negotiating", value: String(pipelineSummary.negotiatingCount), delta: "Deals in conversation" },
             { label: "Ready To Buy", value: String(pipelineSummary.readyToBuyCount), delta: "Near execution decisions" }

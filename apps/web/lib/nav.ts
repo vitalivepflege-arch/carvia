@@ -3,6 +3,7 @@ export const shellSections = [
   { label: "Alerts", value: "Daily Signals", href: "/alerts" },
   { label: "Deal Check", value: "Intelligence", href: "/deal-check" },
   { label: "Market Search", value: "Opportunity Scan", href: "/market-search" },
+  { label: "Pipeline", value: "Board View", href: "/pipeline" },
   { label: "Watchlist", value: "Tracked Vehicles", href: "/watchlist" },
   { label: "Imports", value: "CSV Intake", href: "/imports" },
   { label: "Providers", value: "Integrations", href: "/providers" }

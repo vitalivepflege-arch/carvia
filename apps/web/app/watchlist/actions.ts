@@ -68,6 +68,7 @@ export async function addVehicleToWatchlist(formData: FormData) {
   }
 
   revalidatePath("/");
+  revalidatePath("/pipeline");
   revalidatePath("/watchlist");
 }
 
@@ -89,6 +90,7 @@ export async function updateWatchlistNote(formData: FormData) {
   });
 
   revalidatePath("/watchlist");
+  revalidatePath("/pipeline");
 }
 
 export async function updateWatchlistWorkflow(formData: FormData) {
@@ -113,6 +115,7 @@ export async function updateWatchlistWorkflow(formData: FormData) {
   });
 
   revalidatePath("/");
+  revalidatePath("/pipeline");
   revalidatePath("/watchlist");
 }
 
@@ -130,5 +133,6 @@ export async function removeWatchlistItem(formData: FormData) {
   });
 
   revalidatePath("/");
+  revalidatePath("/pipeline");
   revalidatePath("/watchlist");
 }

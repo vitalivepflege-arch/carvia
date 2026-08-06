@@ -1,5 +1,15 @@
 import { prisma } from "@carvia/database";
 
+export const watchlistStageOrder = ["NEW", "REVIEWING", "NEGOTIATING", "READY_TO_BUY", "PASSED"] as const;
+
+export const watchlistStageLabels: Record<(typeof watchlistStageOrder)[number], string> = {
+  NEGOTIATING: "Negotiating",
+  NEW: "New",
+  PASSED: "Passed",
+  READY_TO_BUY: "Ready to buy",
+  REVIEWING: "Reviewing"
+};
+
 export async function getWatchlistItems(companyId: string) {
   const items = await prisma.watchlist.findMany({
     where: { companyId },
