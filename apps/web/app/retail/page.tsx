@@ -1,8 +1,17 @@
 import Link from "next/link";
 import { Card, StatusPill } from "@carvia/ui";
 import { requireOnboardedSession } from "../../lib/auth";
-import { getClosingWorkspace, closingStatusLabels } from "../../lib/closings";
-import { offerStatusLabels } from "../../lib/offers";
+import { getRetailWorkspace, retailStatusLabels } from "../../lib/retail";
+import { closingStatusLabels } from "../../lib/closings";
+
+const retailTone = {
+  LISTING_READY: "info",
+  LIVE: "success",
+  MEDIA_PENDING: "warning",
+  NONE: "info",
+  RECONDITIONING: "warning",
+  SOLD: "success"
+} as const;
 
 const closingTone = {
   CANCELLED: "danger",
@@ -13,49 +22,36 @@ const closingTone = {
   TRANSPORT_BOOKED: "info"
 } as const;
 
-const offerTone = {
-  ACCEPTED: "success",
-  COUNTER_RECEIVED: "warning",
-  NONE: "info",
-  OFFER_SENT: "warning",
-  PREPARING: "info",
-  REJECTED: "danger"
-} as const;
-
-export default async function ClosingsPage() {
+export default async function RetailPage() {
   const session = await requireOnboardedSession();
-  const items = await getClosingWorkspace(session.user.companyId!);
-  const activeClosings = items.filter((item) =>
-    item.closingStatus === "PAPERWORK_PENDING" ||
-    item.closingStatus === "PAYMENT_PENDING" ||
-    item.closingStatus === "TRANSPORT_BOOKED"
+  const items = await getRetailWorkspace(session.user.companyId!);
+  const activeRetail = items.filter(
+    (item) =>
+      item.retailStatus === "RECONDITIONING" ||
+      item.retailStatus === "MEDIA_PENDING" ||
+      item.retailStatus === "LISTING_READY" ||
+      item.retailStatus === "LIVE"
   ).length;
-  const completedClosings = items.filter((item) => item.closingStatus === "COMPLETED").length;
-  const acceptedDeals = items.filter((item) => item.offerStatus === "ACCEPTED").length;
+  const liveListings = items.filter((item) => item.retailStatus === "LIVE").length;
+  const soldUnits = items.filter((item) => item.retailStatus === "SOLD").length;
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#faf8f3_0%,#eff0eb_100%)] px-6 py-10">
+    <main className="min-h-screen bg-[linear-gradient(180deg,#f7f4ed_0%,#e9ece8_100%)] px-6 py-10">
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.28em] text-[var(--foreground-muted)]">Closings</p>
-            <h1 className="mt-2 text-4xl font-semibold text-[var(--navy)]">Purchase execution workspace</h1>
+            <p className="text-xs uppercase tracking-[0.28em] text-[var(--foreground-muted)]">Retail</p>
+            <h1 className="mt-2 text-4xl font-semibold text-[var(--navy)]">Exit and resale workspace</h1>
             <p className="mt-2 max-w-3xl text-sm text-[var(--foreground-muted)]">
-              Move accepted negotiations through paperwork, payment, transport, and final handoff so the buying team can execute deals cleanly after agreement.
+              Guide purchased vehicles through reconditioning, media, listing readiness, go-live, and sold state so the team can track the exit path end to end.
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/retail"
+              href="/closings"
               className="rounded-full border border-[var(--border)] bg-white px-5 py-3 text-sm font-semibold text-[var(--navy)]"
             >
-              Open retail
-            </Link>
-            <Link
-              href="/offers"
-              className="rounded-full border border-[var(--border)] bg-white px-5 py-3 text-sm font-semibold text-[var(--navy)]"
-            >
-              Open offers
+              Open closings
             </Link>
             <Link
               href="/watchlist"
@@ -68,10 +64,10 @@ export default async function ClosingsPage() {
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
-            { label: "Accepted Deals", value: String(acceptedDeals), delta: "Negotiations won" },
-            { label: "Active Closings", value: String(activeClosings), delta: "In paperwork, payment, or transport" },
-            { label: "Completed", value: String(completedClosings), delta: "Closed purchase workflows" },
-            { label: "Tracked Deals", value: String(items.length), delta: "Watchlist opportunities overall" }
+            { label: "Active Retail", value: String(activeRetail), delta: "Prep, media, ready, or live" },
+            { label: "Live Listings", value: String(liveListings), delta: "Currently in market" },
+            { label: "Sold Units", value: String(soldUnits), delta: "Exited inventory" },
+            { label: "Tracked Deals", value: String(items.length), delta: "All watchlist opportunities" }
           ].map((metric) => (
             <Card key={metric.label} title={metric.label}>
               <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
@@ -82,9 +78,9 @@ export default async function ClosingsPage() {
 
         <div className="grid gap-5">
           {items.length === 0 ? (
-            <Card title="No closings tracked">
+            <Card title="No retail flow tracked">
               <p className="mt-5 text-sm text-[var(--foreground-muted)]">
-                Add opportunities to the watchlist and move them into active offers before using the closing workspace.
+                Move a vehicle through closing first, then use the watchlist workflow to start reconditioning and listing preparation.
               </p>
             </Card>
           ) : (
@@ -93,15 +89,15 @@ export default async function ClosingsPage() {
                 <div className="mt-5 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
                   <div className="space-y-4">
                     <div className="flex flex-wrap items-center gap-3">
-                      <StatusPill tone={offerTone[item.offerStatus]}>{offerStatusLabels[item.offerStatus]}</StatusPill>
                       <StatusPill tone={closingTone[item.closingStatus]}>{closingStatusLabels[item.closingStatus]}</StatusPill>
+                      <StatusPill tone={retailTone[item.retailStatus]}>{retailStatusLabels[item.retailStatus]}</StatusPill>
                       <StatusPill tone="info">{item.vehicle.country ?? "EU stock"}</StatusPill>
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                       {[
-                        ["Accepted / Last Offer", item.latestOfferPrice ? `EUR ${item.latestOfferPrice.toLocaleString("en-US")}` : "-"],
-                        ["Target Buy", item.targetBuyPrice ? `EUR ${item.targetBuyPrice.toLocaleString("en-US")}` : "-"],
-                        ["Closing Target", item.closingTargetDate ? item.closingTargetDate.toLocaleDateString("en-US", { dateStyle: "medium" }) : "-"],
+                        ["Buy In", item.latestOfferPrice ? `EUR ${item.latestOfferPrice.toLocaleString("en-US")}` : "-"],
+                        ["Retail Ask", item.retailAskingPrice ? `EUR ${item.retailAskingPrice.toLocaleString("en-US")}` : "-"],
+                        ["Target Live Date", item.retailTargetDate ? item.retailTargetDate.toLocaleDateString("en-US", { dateStyle: "medium" }) : "-"],
                         ["Projected Margin", item.analysis?.projectedMargin ? `EUR ${item.analysis.projectedMargin.toLocaleString("en-US")}` : "-"]
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-3xl bg-[var(--surface-muted)] p-4">
@@ -113,11 +109,12 @@ export default async function ClosingsPage() {
                   </div>
 
                   <div className="space-y-4 rounded-3xl bg-[var(--surface-muted)] p-4">
-                    <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="grid gap-3 sm:grid-cols-4">
                       {[
-                        ["Paperwork", item.paperworkCompletedAt ? item.paperworkCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
-                        ["Payment", item.paymentCompletedAt ? item.paymentCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
-                        ["Handoff", item.handoffCompletedAt ? item.handoffCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"]
+                        ["Recon", item.reconditioningCompletedAt ? item.reconditioningCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
+                        ["Media", item.mediaCompletedAt ? item.mediaCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
+                        ["Listing", item.listingPublishedAt ? item.listingPublishedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
+                        ["Sold", item.soldAt ? item.soldAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"]
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-2xl border border-[var(--border)] bg-white p-3">
                           <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">{label}</p>
@@ -130,13 +127,13 @@ export default async function ClosingsPage() {
                         href="/watchlist"
                         className="rounded-full bg-[var(--navy)] px-4 py-2 text-sm font-semibold text-white"
                       >
-                        Update closing
+                        Update retail flow
                       </Link>
                       <Link
-                        href="/offers"
+                        href="/closings"
                         className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
                       >
-                        Open offers
+                        Open closings
                       </Link>
                     </div>
                   </div>

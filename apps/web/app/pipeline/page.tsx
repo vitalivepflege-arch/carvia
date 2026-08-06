@@ -9,6 +9,7 @@ import {
   getWatchlistPipelineSummary,
   watchlistClosingStatusLabels,
   watchlistOfferStatusLabels,
+  watchlistRetailStatusLabels,
   watchlistStageLabels,
   watchlistStageOrder
 } from "../../lib/watchlist";
@@ -53,6 +54,15 @@ const closingTone = {
   PAPERWORK_PENDING: "warning",
   PAYMENT_PENDING: "warning",
   TRANSPORT_BOOKED: "info"
+} as const;
+
+const retailTone = {
+  LISTING_READY: "info",
+  LIVE: "success",
+  MEDIA_PENDING: "warning",
+  NONE: "info",
+  RECONDITIONING: "warning",
+  SOLD: "success"
 } as const;
 
 function formatDate(value: Date | null) {
@@ -178,6 +188,7 @@ export default async function PipelinePage() {
                           <StatusPill tone="info">{item.vehicle.country ?? "EU stock"}</StatusPill>
                           <StatusPill tone={offerTone[item.offerStatus]}>{watchlistOfferStatusLabels[item.offerStatus]}</StatusPill>
                           <StatusPill tone={closingTone[item.closingStatus]}>{watchlistClosingStatusLabels[item.closingStatus]}</StatusPill>
+                          <StatusPill tone={retailTone[item.retailStatus]}>{watchlistRetailStatusLabels[item.retailStatus]}</StatusPill>
                           {item.analysis ? <StatusPill tone="success">Score {item.analysis.dealerScore ?? "-"}</StatusPill> : null}
                           {item.analysis ? <StatusPill tone="warning">Confidence {item.analysis.confidence ?? "-"}%</StatusPill> : null}
                         </div>

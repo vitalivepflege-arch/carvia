@@ -10,7 +10,8 @@ import {
   getWatchlistItems,
   getWatchlistPipelineSummary,
   watchlistClosingStatusLabels,
-  watchlistOfferStatusLabels
+  watchlistOfferStatusLabels,
+  watchlistRetailStatusLabels
 } from "../../lib/watchlist";
 import { removeWatchlistItem, updateWatchlistNote, updateWatchlistWorkflow } from "./actions";
 
@@ -59,6 +60,15 @@ const closingTone = {
   PAPERWORK_PENDING: "warning",
   PAYMENT_PENDING: "warning",
   TRANSPORT_BOOKED: "info"
+} as const;
+
+const retailTone = {
+  LISTING_READY: "info",
+  LIVE: "success",
+  MEDIA_PENDING: "warning",
+  NONE: "info",
+  RECONDITIONING: "warning",
+  SOLD: "success"
 } as const;
 
 function formatStage(stage: string) {
@@ -131,6 +141,7 @@ export default async function WatchlistPage() {
                       <StatusPill tone={priorityTone[item.priority]}>{item.priority} Priority</StatusPill>
                       <StatusPill tone={offerTone[item.offerStatus]}>{watchlistOfferStatusLabels[item.offerStatus]}</StatusPill>
                       <StatusPill tone={closingTone[item.closingStatus]}>{watchlistClosingStatusLabels[item.closingStatus]}</StatusPill>
+                      <StatusPill tone={retailTone[item.retailStatus]}>{watchlistRetailStatusLabels[item.retailStatus]}</StatusPill>
                       {item.analysis ? (
                         <>
                           <StatusPill tone="success">Score {item.analysis.dealerScore ?? "-"}</StatusPill>
@@ -150,7 +161,9 @@ export default async function WatchlistPage() {
                         ["Target Buy", item.targetBuyPrice ? `EUR ${item.targetBuyPrice.toLocaleString("en-US")}` : "-"],
                         ["Last Offer", item.latestOfferPrice ? `EUR ${item.latestOfferPrice.toLocaleString("en-US")}` : "-"],
                         ["Counter", item.counterOfferPrice ? `EUR ${item.counterOfferPrice.toLocaleString("en-US")}` : "-"],
-                        ["Closing Target", item.closingTargetDate ? item.closingTargetDate.toLocaleDateString("en-US", { dateStyle: "medium" }) : "-"]
+                        ["Closing Target", item.closingTargetDate ? item.closingTargetDate.toLocaleDateString("en-US", { dateStyle: "medium" }) : "-"],
+                        ["Retail Ask", item.retailAskingPrice ? `EUR ${item.retailAskingPrice.toLocaleString("en-US")}` : "-"],
+                        ["Retail Target", item.retailTargetDate ? item.retailTargetDate.toLocaleDateString("en-US", { dateStyle: "medium" }) : "-"]
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-3xl bg-[var(--surface-muted)] p-4">
                           <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</p>
@@ -174,6 +187,22 @@ export default async function WatchlistPage() {
                           ["Paperwork", item.paperworkCompletedAt ? item.paperworkCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
                           ["Payment", item.paymentCompletedAt ? item.paymentCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
                           ["Handoff", item.handoffCompletedAt ? item.handoffCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"]
+                        ].map(([label, value]) => (
+                          <div key={label} className="rounded-2xl border border-[var(--border)] bg-white p-3">
+                            <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">{label}</p>
+                            <p className="mt-2 text-sm text-[var(--navy)]">{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl bg-[var(--surface-muted)] p-4">
+                      <div className="grid gap-3 sm:grid-cols-4">
+                        {[
+                          ["Recon", item.reconditioningCompletedAt ? item.reconditioningCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
+                          ["Media", item.mediaCompletedAt ? item.mediaCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
+                          ["Listing", item.listingPublishedAt ? item.listingPublishedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
+                          ["Sold", item.soldAt ? item.soldAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"]
                         ].map(([label, value]) => (
                           <div key={label} className="rounded-2xl border border-[var(--border)] bg-white p-3">
                             <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">{label}</p>
@@ -374,6 +403,22 @@ export default async function WatchlistPage() {
                         </label>
 
                         <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Retail status</span>
+                          <select
+                            name="retailStatus"
+                            defaultValue={item.retailStatus}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          >
+                            <option value="NONE">No retail flow</option>
+                            <option value="RECONDITIONING">Reconditioning</option>
+                            <option value="MEDIA_PENDING">Media pending</option>
+                            <option value="LISTING_READY">Listing ready</option>
+                            <option value="LIVE">Live</option>
+                            <option value="SOLD">Sold</option>
+                          </select>
+                        </label>
+
+                        <label className="block">
                           <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Target buy price</span>
                           <input
                             name="targetBuyPrice"
@@ -442,6 +487,67 @@ export default async function WatchlistPage() {
                             name="handoffCompletedAt"
                             type="date"
                             defaultValue={item.handoffCompletedAt ? item.handoffCompletedAt.toISOString().slice(0, 10) : ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Retail asking price</span>
+                          <input
+                            name="retailAskingPrice"
+                            type="number"
+                            step="0.01"
+                            defaultValue={item.retailAskingPrice ?? ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Retail target date</span>
+                          <input
+                            name="retailTargetDate"
+                            type="date"
+                            defaultValue={item.retailTargetDate ? item.retailTargetDate.toISOString().slice(0, 10) : ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Reconditioning completed</span>
+                          <input
+                            name="reconditioningCompletedAt"
+                            type="date"
+                            defaultValue={item.reconditioningCompletedAt ? item.reconditioningCompletedAt.toISOString().slice(0, 10) : ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Media completed</span>
+                          <input
+                            name="mediaCompletedAt"
+                            type="date"
+                            defaultValue={item.mediaCompletedAt ? item.mediaCompletedAt.toISOString().slice(0, 10) : ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Listing published</span>
+                          <input
+                            name="listingPublishedAt"
+                            type="date"
+                            defaultValue={item.listingPublishedAt ? item.listingPublishedAt.toISOString().slice(0, 10) : ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Sold at</span>
+                          <input
+                            name="soldAt"
+                            type="date"
+                            defaultValue={item.soldAt ? item.soldAt.toISOString().slice(0, 10) : ""}
                             className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
                           />
                         </label>

@@ -60,6 +60,15 @@ enum WatchlistClosingStatus {
   CANCELLED
 }
 
+enum WatchlistRetailStatus {
+  NONE
+  RECONDITIONING
+  MEDIA_PENDING
+  LISTING_READY
+  LIVE
+  SOLD
+}
+
 enum TaskStatus {
   OPEN
   DONE
@@ -234,6 +243,14 @@ model Watchlist {
   paymentCompletedAt DateTime?
   handoffCompletedAt DateTime?
   closingUpdatedAt DateTime?
+  retailStatus  WatchlistRetailStatus @default(NONE)
+  retailAskingPrice Decimal?      @db.Decimal(12, 2)
+  retailTargetDate DateTime?
+  reconditioningCompletedAt DateTime?
+  mediaCompletedAt DateTime?
+  listingPublishedAt DateTime?
+  soldAt DateTime?
+  retailUpdatedAt DateTime?
   nextActionAt DateTime?
   activities   WatchlistActivity[]
   contacts     WatchlistContact[]

@@ -28,6 +28,15 @@ export const watchlistClosingStatusLabels = {
   TRANSPORT_BOOKED: "Transport booked"
 } as const;
 
+export const watchlistRetailStatusLabels = {
+  LISTING_READY: "Listing ready",
+  LIVE: "Live",
+  MEDIA_PENDING: "Media pending",
+  NONE: "No retail flow",
+  RECONDITIONING: "Reconditioning",
+  SOLD: "Sold"
+} as const;
+
 export async function getWatchlistItems(companyId: string) {
   const items = await prisma.watchlist.findMany({
     where: { companyId },
@@ -178,9 +187,16 @@ export async function getWatchlistItems(companyId: string) {
       contacts: contactsByWatchlist.get(item.id) ?? [],
       handoffCompletedAt: item.handoffCompletedAt,
       latestOfferPrice: item.latestOfferPrice ? Number(item.latestOfferPrice) : null,
+      listingPublishedAt: item.listingPublishedAt,
+      mediaCompletedAt: item.mediaCompletedAt,
       paperworkCompletedAt: item.paperworkCompletedAt,
       paymentCompletedAt: item.paymentCompletedAt,
       recentActivities: activitiesByWatchlist.get(item.id) ?? [],
+      reconditioningCompletedAt: item.reconditioningCompletedAt,
+      retailAskingPrice: item.retailAskingPrice ? Number(item.retailAskingPrice) : null,
+      retailTargetDate: item.retailTargetDate,
+      retailUpdatedAt: item.retailUpdatedAt,
+      soldAt: item.soldAt,
       targetBuyPrice: item.targetBuyPrice ? Number(item.targetBuyPrice) : null,
       openTasks: tasksByWatchlist.get(item.id) ?? [],
       vehicle: vehicleMap.get(item.vehicleId) ?? null
@@ -223,6 +239,7 @@ export async function getWatchlistPipelineSummary(companyId: string) {
         nextActionAt: true,
         offerStatus: true,
         priority: true,
+        retailStatus: true,
         stage: true
       }
     }),
@@ -244,6 +261,13 @@ export async function getWatchlistPipelineSummary(companyId: string) {
         item.closingStatus === "PAPERWORK_PENDING" ||
         item.closingStatus === "PAYMENT_PENDING" ||
         item.closingStatus === "TRANSPORT_BOOKED"
+    ).length,
+    activeRetailCount: items.filter(
+      (item) =>
+        item.retailStatus === "RECONDITIONING" ||
+        item.retailStatus === "MEDIA_PENDING" ||
+        item.retailStatus === "LISTING_READY" ||
+        item.retailStatus === "LIVE"
     ).length,
     readyToBuyCount: items.filter((item) => item.stage === "READY_TO_BUY").length,
     openTaskCount

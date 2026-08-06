@@ -23,10 +23,17 @@ const updateWatchlistWorkflowSchema = z.object({
   counterOfferPrice: z.string().optional(),
   handoffCompletedAt: z.string().optional(),
   latestOfferPrice: z.string().optional(),
+  listingPublishedAt: z.string().optional(),
+  mediaCompletedAt: z.string().optional(),
   nextActionAt: z.string().optional(),
   paperworkCompletedAt: z.string().optional(),
   paymentCompletedAt: z.string().optional(),
   priority: z.enum(["LOW", "MEDIUM", "HIGH"]),
+  reconditioningCompletedAt: z.string().optional(),
+  retailAskingPrice: z.string().optional(),
+  retailStatus: z.enum(["NONE", "RECONDITIONING", "MEDIA_PENDING", "LISTING_READY", "LIVE", "SOLD"]).optional(),
+  retailTargetDate: z.string().optional(),
+  soldAt: z.string().optional(),
   offerStatus: z.enum(["NONE", "PREPARING", "OFFER_SENT", "COUNTER_RECEIVED", "ACCEPTED", "REJECTED"]).optional(),
   stage: z.enum(["NEW", "REVIEWING", "NEGOTIATING", "READY_TO_BUY", "PASSED"]),
   targetBuyPrice: z.string().optional(),
@@ -112,11 +119,18 @@ export async function updateWatchlistWorkflow(formData: FormData) {
     counterOfferPrice: readOptionalString(formData, "counterOfferPrice"),
     handoffCompletedAt: readOptionalString(formData, "handoffCompletedAt"),
     latestOfferPrice: readOptionalString(formData, "latestOfferPrice"),
+    listingPublishedAt: readOptionalString(formData, "listingPublishedAt"),
+    mediaCompletedAt: readOptionalString(formData, "mediaCompletedAt"),
     nextActionAt: readOptionalString(formData, "nextActionAt"),
     offerStatus: readOptionalString(formData, "offerStatus"),
     paperworkCompletedAt: readOptionalString(formData, "paperworkCompletedAt"),
     paymentCompletedAt: readOptionalString(formData, "paymentCompletedAt"),
     priority: formData.get("priority"),
+    reconditioningCompletedAt: readOptionalString(formData, "reconditioningCompletedAt"),
+    retailAskingPrice: readOptionalString(formData, "retailAskingPrice"),
+    retailStatus: readOptionalString(formData, "retailStatus"),
+    retailTargetDate: readOptionalString(formData, "retailTargetDate"),
+    soldAt: readOptionalString(formData, "soldAt"),
     stage: formData.get("stage"),
     targetBuyPrice: readOptionalString(formData, "targetBuyPrice"),
     watchlistId: formData.get("watchlistId")
@@ -146,6 +160,25 @@ export async function updateWatchlistWorkflow(formData: FormData) {
       paperworkCompletedAt: parsed.paperworkCompletedAt ? new Date(`${parsed.paperworkCompletedAt}T00:00:00.000Z`) : null,
       paymentCompletedAt: parsed.paymentCompletedAt ? new Date(`${parsed.paymentCompletedAt}T00:00:00.000Z`) : null,
       priority: parsed.priority,
+      reconditioningCompletedAt: parsed.reconditioningCompletedAt
+        ? new Date(`${parsed.reconditioningCompletedAt}T00:00:00.000Z`)
+        : null,
+      retailAskingPrice: parsed.retailAskingPrice ? Number(parsed.retailAskingPrice) : null,
+      retailStatus: parsed.retailStatus ?? undefined,
+      retailTargetDate: parsed.retailTargetDate ? new Date(`${parsed.retailTargetDate}T00:00:00.000Z`) : null,
+      retailUpdatedAt:
+        parsed.retailStatus ||
+        parsed.retailAskingPrice ||
+        parsed.retailTargetDate ||
+        parsed.reconditioningCompletedAt ||
+        parsed.mediaCompletedAt ||
+        parsed.listingPublishedAt ||
+        parsed.soldAt
+          ? new Date()
+          : undefined,
+      mediaCompletedAt: parsed.mediaCompletedAt ? new Date(`${parsed.mediaCompletedAt}T00:00:00.000Z`) : null,
+      listingPublishedAt: parsed.listingPublishedAt ? new Date(`${parsed.listingPublishedAt}T00:00:00.000Z`) : null,
+      soldAt: parsed.soldAt ? new Date(`${parsed.soldAt}T00:00:00.000Z`) : null,
       stage: parsed.stage,
       targetBuyPrice: parsed.targetBuyPrice ? Number(parsed.targetBuyPrice) : null
     }
@@ -155,6 +188,7 @@ export async function updateWatchlistWorkflow(formData: FormData) {
   revalidatePath("/closings");
   revalidatePath("/offers");
   revalidatePath("/pipeline");
+  revalidatePath("/retail");
   revalidatePath("/watchlist");
 }
 
