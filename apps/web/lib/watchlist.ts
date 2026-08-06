@@ -199,11 +199,15 @@ export async function getWatchlistItems(companyId: string) {
       latestOfferPrice: item.latestOfferPrice ? Number(item.latestOfferPrice) : null,
       listingPublishedAt: item.listingPublishedAt,
       leadCount: item.leadCount,
+      holdingCost: item.holdingCost ? Number(item.holdingCost) : null,
+      inventoryUpdatedAt: item.inventoryUpdatedAt,
       mediaCompletedAt: item.mediaCompletedAt,
+      miscCost: item.miscCost ? Number(item.miscCost) : null,
       paperworkCompletedAt: item.paperworkCompletedAt,
       paymentCompletedAt: item.paymentCompletedAt,
       recentActivities: activitiesByWatchlist.get(item.id) ?? [],
       reconditioningCompletedAt: item.reconditioningCompletedAt,
+      reconditioningCost: item.reconditioningCost ? Number(item.reconditioningCost) : null,
       reservationPlacedAt: item.reservationPlacedAt,
       retailAskingPrice: item.retailAskingPrice ? Number(item.retailAskingPrice) : null,
       retailTargetDate: item.retailTargetDate,
@@ -214,6 +218,7 @@ export async function getWatchlistItems(companyId: string) {
       soldAt: item.soldAt,
       testDriveScheduledAt: item.testDriveScheduledAt,
       targetBuyPrice: item.targetBuyPrice ? Number(item.targetBuyPrice) : null,
+      transportCost: item.transportCost ? Number(item.transportCost) : null,
       openTasks: tasksByWatchlist.get(item.id) ?? [],
       vehicle: vehicleMap.get(item.vehicleId) ?? null
     }))

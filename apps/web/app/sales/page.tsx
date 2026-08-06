@@ -49,6 +49,12 @@ export default async function SalesPage() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link
+              href="/inventory"
+              className="rounded-full border border-[var(--border)] bg-white px-5 py-3 text-sm font-semibold text-[var(--navy)]"
+            >
+              Open inventory
+            </Link>
+            <Link
               href="/retail"
               className="rounded-full border border-[var(--border)] bg-white px-5 py-3 text-sm font-semibold text-[var(--navy)]"
             >

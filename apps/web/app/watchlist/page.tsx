@@ -178,7 +178,11 @@ export default async function WatchlistPage() {
                         ["Retail Target", item.retailTargetDate ? item.retailTargetDate.toLocaleDateString("en-US", { dateStyle: "medium" }) : "-"],
                         ["Lead Count", String(item.leadCount ?? 0)],
                         ["Sales Target", item.salesTargetDate ? item.salesTargetDate.toLocaleDateString("en-US", { dateStyle: "medium" }) : "-"],
-                        ["Sold Price", item.soldRetailPrice ? `EUR ${item.soldRetailPrice.toLocaleString("en-US")}` : "-"]
+                        ["Sold Price", item.soldRetailPrice ? `EUR ${item.soldRetailPrice.toLocaleString("en-US")}` : "-"],
+                        ["Transport", item.transportCost ? `EUR ${item.transportCost.toLocaleString("en-US")}` : "-"],
+                        ["Recon Cost", item.reconditioningCost ? `EUR ${item.reconditioningCost.toLocaleString("en-US")}` : "-"],
+                        ["Holding Cost", item.holdingCost ? `EUR ${item.holdingCost.toLocaleString("en-US")}` : "-"],
+                        ["Misc Cost", item.miscCost ? `EUR ${item.miscCost.toLocaleString("en-US")}` : "-"]
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-3xl bg-[var(--surface-muted)] p-4">
                           <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</p>
@@ -647,6 +651,50 @@ export default async function WatchlistPage() {
                             type="number"
                             step="0.01"
                             defaultValue={item.soldRetailPrice ?? ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Transport cost</span>
+                          <input
+                            name="transportCost"
+                            type="number"
+                            step="0.01"
+                            defaultValue={item.transportCost ?? ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Reconditioning cost</span>
+                          <input
+                            name="reconditioningCost"
+                            type="number"
+                            step="0.01"
+                            defaultValue={item.reconditioningCost ?? ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Holding cost</span>
+                          <input
+                            name="holdingCost"
+                            type="number"
+                            step="0.01"
+                            defaultValue={item.holdingCost ?? ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Misc cost</span>
+                          <input
+                            name="miscCost"
+                            type="number"
+                            step="0.01"
+                            defaultValue={item.miscCost ?? ""}
                             className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
                           />
                         </label>

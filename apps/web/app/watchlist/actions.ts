@@ -26,6 +26,7 @@ const updateWatchlistWorkflowSchema = z.object({
   leadCount: z.string().optional(),
   listingPublishedAt: z.string().optional(),
   mediaCompletedAt: z.string().optional(),
+  miscCost: z.string().optional(),
   nextActionAt: z.string().optional(),
   paperworkCompletedAt: z.string().optional(),
   paymentCompletedAt: z.string().optional(),
@@ -41,10 +42,13 @@ const updateWatchlistWorkflowSchema = z.object({
   salesTargetDate: z.string().optional(),
   soldAt: z.string().optional(),
   soldRetailPrice: z.string().optional(),
+  holdingCost: z.string().optional(),
   offerStatus: z.enum(["NONE", "PREPARING", "OFFER_SENT", "COUNTER_RECEIVED", "ACCEPTED", "REJECTED"]).optional(),
   stage: z.enum(["NEW", "REVIEWING", "NEGOTIATING", "READY_TO_BUY", "PASSED"]),
   testDriveScheduledAt: z.string().optional(),
   targetBuyPrice: z.string().optional(),
+  transportCost: z.string().optional(),
+  reconditioningCost: z.string().optional(),
   watchlistId: z.string().min(1)
 });
 
@@ -130,6 +134,7 @@ export async function updateWatchlistWorkflow(formData: FormData) {
     leadCount: readOptionalString(formData, "leadCount"),
     listingPublishedAt: readOptionalString(formData, "listingPublishedAt"),
     mediaCompletedAt: readOptionalString(formData, "mediaCompletedAt"),
+    miscCost: readOptionalString(formData, "miscCost"),
     nextActionAt: readOptionalString(formData, "nextActionAt"),
     offerStatus: readOptionalString(formData, "offerStatus"),
     paperworkCompletedAt: readOptionalString(formData, "paperworkCompletedAt"),
@@ -144,9 +149,12 @@ export async function updateWatchlistWorkflow(formData: FormData) {
     salesTargetDate: readOptionalString(formData, "salesTargetDate"),
     soldAt: readOptionalString(formData, "soldAt"),
     soldRetailPrice: readOptionalString(formData, "soldRetailPrice"),
+    holdingCost: readOptionalString(formData, "holdingCost"),
     stage: formData.get("stage"),
     testDriveScheduledAt: readOptionalString(formData, "testDriveScheduledAt"),
     targetBuyPrice: readOptionalString(formData, "targetBuyPrice"),
+    transportCost: readOptionalString(formData, "transportCost"),
+    reconditioningCost: readOptionalString(formData, "reconditioningCost"),
     watchlistId: formData.get("watchlistId")
   });
 
@@ -164,6 +172,11 @@ export async function updateWatchlistWorkflow(formData: FormData) {
           : undefined,
       counterOfferPrice: parsed.counterOfferPrice ? Number(parsed.counterOfferPrice) : null,
       handoffCompletedAt: parsed.handoffCompletedAt ? new Date(`${parsed.handoffCompletedAt}T00:00:00.000Z`) : null,
+      holdingCost: parsed.holdingCost ? Number(parsed.holdingCost) : null,
+      inventoryUpdatedAt:
+        parsed.transportCost || parsed.reconditioningCost || parsed.holdingCost || parsed.miscCost
+          ? new Date()
+          : undefined,
       latestOfferPrice: parsed.latestOfferPrice ? Number(parsed.latestOfferPrice) : null,
       leadCount: parsed.leadCount ? Number(parsed.leadCount) : 0,
       nextActionAt: parsed.nextActionAt ? new Date(`${parsed.nextActionAt}T00:00:00.000Z`) : null,
@@ -178,6 +191,7 @@ export async function updateWatchlistWorkflow(formData: FormData) {
       reconditioningCompletedAt: parsed.reconditioningCompletedAt
         ? new Date(`${parsed.reconditioningCompletedAt}T00:00:00.000Z`)
         : null,
+      reconditioningCost: parsed.reconditioningCost ? Number(parsed.reconditioningCost) : null,
       retailAskingPrice: parsed.retailAskingPrice ? Number(parsed.retailAskingPrice) : null,
       retailStatus: parsed.retailStatus ?? undefined,
       retailTargetDate: parsed.retailTargetDate ? new Date(`${parsed.retailTargetDate}T00:00:00.000Z`) : null,
@@ -192,6 +206,7 @@ export async function updateWatchlistWorkflow(formData: FormData) {
           ? new Date()
           : undefined,
       mediaCompletedAt: parsed.mediaCompletedAt ? new Date(`${parsed.mediaCompletedAt}T00:00:00.000Z`) : null,
+      miscCost: parsed.miscCost ? Number(parsed.miscCost) : null,
       listingPublishedAt: parsed.listingPublishedAt ? new Date(`${parsed.listingPublishedAt}T00:00:00.000Z`) : null,
       reservationPlacedAt: parsed.reservationPlacedAt ? new Date(`${parsed.reservationPlacedAt}T00:00:00.000Z`) : null,
       salesStatus: parsed.salesStatus ?? undefined,
@@ -209,7 +224,8 @@ export async function updateWatchlistWorkflow(formData: FormData) {
       soldAt: parsed.soldAt ? new Date(`${parsed.soldAt}T00:00:00.000Z`) : null,
       stage: parsed.stage,
       testDriveScheduledAt: parsed.testDriveScheduledAt ? new Date(`${parsed.testDriveScheduledAt}T00:00:00.000Z`) : null,
-      targetBuyPrice: parsed.targetBuyPrice ? Number(parsed.targetBuyPrice) : null
+      targetBuyPrice: parsed.targetBuyPrice ? Number(parsed.targetBuyPrice) : null,
+      transportCost: parsed.transportCost ? Number(parsed.transportCost) : null
     }
   });
 
@@ -219,6 +235,7 @@ export async function updateWatchlistWorkflow(formData: FormData) {
   revalidatePath("/pipeline");
   revalidatePath("/retail");
   revalidatePath("/sales");
+  revalidatePath("/inventory");
   revalidatePath("/watchlist");
 }
 
