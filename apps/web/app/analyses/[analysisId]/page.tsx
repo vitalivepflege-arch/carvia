@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@carvia/database";
 import { MockVehicleProvider } from "@carvia/providers";
-import { Card, StatusPill } from "@carvia/ui";
+import { Card, MarketRangeChart, MetricBar, StatusPill } from "@carvia/ui";
 import {
   buildDealerScoreBreakdown,
   buildRiskFactors,
@@ -261,26 +261,52 @@ export default async function AnalysisDetailPage({
 
         <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
           <Card title="Market Read">
-            <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {[
-                ["Comparables", String(marketSummary.comparableCount)],
-                ["Market Median", `EUR ${Number(marketSummary.median ?? 0).toLocaleString("en-US")}`],
-                ["Trimmed Mean", `EUR ${Number(marketSummary.trimmedMean ?? 0).toLocaleString("en-US")}`],
-                ["P25", `EUR ${Number(marketSummary.percentile25 ?? 0).toLocaleString("en-US")}`],
-                ["P75", `EUR ${Number(marketSummary.percentile75 ?? 0).toLocaleString("en-US")}`],
-                ["Market Position", `${marketPosition}/100`]
-              ].map(([label, value]) => (
-                <div key={label} className="rounded-3xl bg-[var(--surface-muted)] p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</p>
-                  <p className="mt-2 text-lg font-medium text-[var(--navy)]">{value}</p>
-                </div>
-              ))}
+            <div className="mt-5 space-y-5">
+              <MarketRangeChart
+                current={Number(analysis.purchasePrice)}
+                label="Purchase price versus market band"
+                maximum={marketSummary.maximum}
+                median={marketSummary.median}
+                minimum={marketSummary.minimum}
+                percentile25={marketSummary.percentile25}
+                percentile75={marketSummary.percentile75}
+              />
+
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {[
+                  ["Comparables", String(marketSummary.comparableCount)],
+                  ["Market Median", `EUR ${Number(marketSummary.median ?? 0).toLocaleString("en-US")}`],
+                  ["Trimmed Mean", `EUR ${Number(marketSummary.trimmedMean ?? 0).toLocaleString("en-US")}`],
+                  ["P25", `EUR ${Number(marketSummary.percentile25 ?? 0).toLocaleString("en-US")}`],
+                  ["P75", `EUR ${Number(marketSummary.percentile75 ?? 0).toLocaleString("en-US")}`],
+                  ["Market Position", `${marketPosition}/100`]
+                ].map(([label, value]) => (
+                  <div key={label} className="rounded-3xl bg-[var(--surface-muted)] p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</p>
+                    <p className="mt-2 text-lg font-medium text-[var(--navy)]">{value}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </Card>
 
           <Card title="Score Breakdown">
             <div className="mt-5 space-y-4">
-              {[
+              <div className="rounded-3xl border border-[var(--border)] bg-white p-4">
+                <MetricBar
+                  label="Overall dealer score"
+                  tone={
+                    scoreBreakdown.overallScore >= 75
+                      ? "success"
+                      : scoreBreakdown.overallScore >= 55
+                        ? "warning"
+                        : "danger"
+                  }
+                  value={scoreBreakdown.overallScore}
+                />
+              </div>
+
+              {([
                 ["Overall", scoreBreakdown.overallScore],
                 ["Margin", scoreBreakdown.marginScore],
                 ["Market Price", scoreBreakdown.marketPriceScore],
@@ -288,14 +314,13 @@ export default async function AnalysisDetailPage({
                 ["Liquidity", scoreBreakdown.liquidityScore],
                 ["Risk", scoreBreakdown.riskScore],
                 ["Confidence", scoreBreakdown.confidenceScore]
-              ].map(([label, value]) => (
+              ] as const).map(([label, value]) => (
                 <div key={label} className="rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <p className="font-medium text-[var(--navy)]">{label}</p>
-                    <StatusPill tone={Number(value) >= 75 ? "success" : Number(value) >= 55 ? "warning" : "danger"}>
-                      {value}/100
-                    </StatusPill>
-                  </div>
+                  <MetricBar
+                    label={label}
+                    tone={Number(value) >= 75 ? "success" : Number(value) >= 55 ? "warning" : "danger"}
+                    value={Number(value)}
+                  />
                 </div>
               ))}
             </div>
