@@ -1,4 +1,13 @@
 import { MockVehicleProvider } from "@carvia/providers";
+import {
+  buildDealerScoreBreakdown,
+  buildRiskFactors,
+  calculateProjectedMargin,
+  deriveDemandScore,
+  deriveLiquidityScore,
+  deriveRiskScore,
+  summarizeMarket
+} from "./analysis-services";
 
 const mockProvider = new MockVehicleProvider();
 
@@ -73,80 +82,59 @@ export async function analyzeDeal(input: DealCheckInput) {
   };
 
   const comparables = await mockProvider.getPriceData(targetVehicle);
-  const comparablePrices = comparables
-    .map((vehicle) => vehicle.priceGross)
-    .filter((price): price is number => typeof price === "number")
-    .sort((a, b) => a - b);
-
-  const percentile = (values: number[], ratio: number) => {
-    if (values.length === 0) {
-      return null;
-    }
-
-    const index = Math.min(values.length - 1, Math.max(0, Math.round((values.length - 1) * ratio)));
-    return values[index] ?? null;
-  };
-
-  const median = percentile(comparablePrices, 0.5);
-  const percentile25 = percentile(comparablePrices, 0.25);
-  const percentile75 = percentile(comparablePrices, 0.75);
-
-  const estimatedTransactionPrice = median ? Math.round(median * 0.973) : input.purchasePrice;
-  const totalLandedCost =
-    input.purchasePrice +
-    input.transportCost +
-    input.preparationCost +
-    input.repairCost +
-    input.auctionFee +
-    input.otherCost;
-  const projectedMargin = estimatedTransactionPrice - totalLandedCost;
-  const projectedMarginPercent =
-    totalLandedCost > 0 ? Math.round((projectedMargin / totalLandedCost) * 1000) / 10 : 0;
-  const confidence = Math.min(93, 35 + comparables.length * 12);
-  const dealerScore = Math.max(
-    18,
-    Math.min(
-      98,
-      Math.round(
-        projectedMarginPercent * 2.2 +
-          (estimatedTransactionPrice > input.purchasePrice ? 18 : 4) +
-          confidence * 0.42
-      )
-    )
+  const marketSummary = summarizeMarket(comparables);
+  const estimatedTransactionPrice = marketSummary.median ? Math.round(marketSummary.median * 0.973) : input.purchasePrice;
+  const marginResult = calculateProjectedMargin(
+    {
+      auctionFee: input.auctionFee,
+      financingCost: 0,
+      otherCost: input.otherCost,
+      preparationCost: input.preparationCost,
+      purchasePrice: input.purchasePrice,
+      repairCost: input.repairCost,
+      transportCost: input.transportCost
+    },
+    estimatedTransactionPrice
   );
+  const confidence = Math.min(93, 35 + comparables.length * 12);
+  const demandScore = deriveDemandScore(targetVehicle);
+  const liquidityScore = deriveLiquidityScore(targetVehicle);
+  const marketPosition = estimatedTransactionPrice > input.purchasePrice ? 72 : 48;
+  const riskScore = deriveRiskScore({
+    comparablesCount: comparables.length,
+    marginPercent: marginResult.projectedMarginPercent,
+    mileageKm: input.mileageKm
+  });
+  const scoreBreakdown = buildDealerScoreBreakdown({
+    confidence,
+    demand: demandScore,
+    liquidity: liquidityScore,
+    marginPercent: marginResult.projectedMarginPercent,
+    marketPosition,
+    risk: riskScore
+  });
 
   return {
     comparables,
     confidence,
-    dealerScore,
+    dealerScore: scoreBreakdown.overallScore,
+    dealerScoreBreakdown: scoreBreakdown,
+    demandScore,
     estimatedTransactionPrice,
-    marketSummary: {
-      comparableCount: comparables.length,
-      maximum: comparablePrices.at(-1) ?? null,
-      median,
-      minimum: comparablePrices.at(0) ?? null,
-      percentile25,
-      percentile75,
-      trimmedMean:
-        comparablePrices.length > 2
-          ? Math.round(
-              comparablePrices.slice(1, -1).reduce((sum, price) => sum + price, 0) /
-                (comparablePrices.length - 2)
-            )
-          : median
-    },
-    projectedMargin,
-    projectedMarginPercent,
-    riskFactors: [
-      projectedMargin > 3500 ? "Price attractive versus mock market." : "Margin buffer is relatively thin.",
-      confidence >= 70
-        ? "Comparable coverage is solid for a mock-data MVP."
-        : "Confidence is limited because only few comparables match.",
-      input.mileageKm > 60000
-        ? "Mileage is above the most liquid sweet spot."
-        : "Mileage remains in an attractive retail range."
-    ],
+    liquidityScore,
+    marketPosition,
+    marketSummary,
+    projectedMargin: marginResult.projectedGrossMargin,
+    projectedMarginPercent: marginResult.projectedMarginPercent,
+    riskFactors: buildRiskFactors({
+      comparablesCount: comparables.length,
+      confidence,
+      liquidityScore,
+      marginPercent: marginResult.projectedMarginPercent,
+      mileageKm: input.mileageKm
+    }),
+    riskScore,
     targetVehicle,
-    totalLandedCost
+    totalLandedCost: marginResult.totalLandedCost
   };
 }

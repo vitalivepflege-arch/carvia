@@ -3,6 +3,14 @@ import { notFound } from "next/navigation";
 import { prisma } from "@carvia/database";
 import { MockVehicleProvider } from "@carvia/providers";
 import { Card, StatusPill } from "@carvia/ui";
+import {
+  buildDealerScoreBreakdown,
+  buildRiskFactors,
+  deriveDemandScore,
+  deriveLiquidityScore,
+  deriveRiskScore,
+  summarizeMarket
+} from "../../../lib/analysis-services";
 import { addVehicleToWatchlist } from "../../watchlist/actions";
 import { requireOnboardedSession } from "../../../lib/auth";
 
@@ -90,6 +98,43 @@ export default async function AnalysisDetailPage({
     removedAt: vehicle.removedAt?.toISOString() ?? null,
     createdAt: vehicle.createdAt.toISOString(),
     updatedAt: vehicle.updatedAt.toISOString()
+  });
+
+  const marketSummary = summarizeMarket(comparables);
+  const projectedMargin = Number(analysis.projectedMargin ?? 0);
+  const totalLandedCost = Number(analysis.totalLandedCost ?? 0);
+  const projectedMarginPercent =
+    totalLandedCost > 0 ? Math.round((projectedMargin / totalLandedCost) * 1000) / 10 : 0;
+  const demandScore = deriveDemandScore({
+    fuelType: vehicle.fuelType,
+    make: vehicle.make,
+    mileageKm: vehicle.mileageKm,
+    model: vehicle.model
+  });
+  const liquidityScore = deriveLiquidityScore({
+    firstRegistration: vehicle.firstRegistration ? vehicle.firstRegistration.toISOString().slice(0, 7) : null,
+    mileageKm: vehicle.mileageKm
+  });
+  const marketPosition = Number(analysis.estimatedTransactionPrice ?? 0) > Number(analysis.purchasePrice) ? 72 : 48;
+  const riskScore = deriveRiskScore({
+    comparablesCount: comparables.length,
+    marginPercent: projectedMarginPercent,
+    mileageKm: vehicle.mileageKm
+  });
+  const scoreBreakdown = buildDealerScoreBreakdown({
+    confidence: analysis.confidence ?? 0,
+    demand: demandScore,
+    liquidity: liquidityScore,
+    marginPercent: projectedMarginPercent,
+    marketPosition,
+    risk: riskScore
+  });
+  const riskFactors = buildRiskFactors({
+    comparablesCount: comparables.length,
+    confidence: analysis.confidence ?? 0,
+    liquidityScore,
+    marginPercent: projectedMarginPercent,
+    mileageKm: vehicle.mileageKm
   });
 
   return (
@@ -213,6 +258,74 @@ export default async function AnalysisDetailPage({
             </div>
           </Card>
         </div>
+
+        <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+          <Card title="Market Read">
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {[
+                ["Comparables", String(marketSummary.comparableCount)],
+                ["Market Median", `EUR ${Number(marketSummary.median ?? 0).toLocaleString("en-US")}`],
+                ["Trimmed Mean", `EUR ${Number(marketSummary.trimmedMean ?? 0).toLocaleString("en-US")}`],
+                ["P25", `EUR ${Number(marketSummary.percentile25 ?? 0).toLocaleString("en-US")}`],
+                ["P75", `EUR ${Number(marketSummary.percentile75 ?? 0).toLocaleString("en-US")}`],
+                ["Market Position", `${marketPosition}/100`]
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-3xl bg-[var(--surface-muted)] p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</p>
+                  <p className="mt-2 text-lg font-medium text-[var(--navy)]">{value}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card title="Score Breakdown">
+            <div className="mt-5 space-y-4">
+              {[
+                ["Overall", scoreBreakdown.overallScore],
+                ["Margin", scoreBreakdown.marginScore],
+                ["Market Price", scoreBreakdown.marketPriceScore],
+                ["Demand", scoreBreakdown.demandScore],
+                ["Liquidity", scoreBreakdown.liquidityScore],
+                ["Risk", scoreBreakdown.riskScore],
+                ["Confidence", scoreBreakdown.confidenceScore]
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="font-medium text-[var(--navy)]">{label}</p>
+                    <StatusPill tone={Number(value) >= 75 ? "success" : Number(value) >= 55 ? "warning" : "danger"}>
+                      {value}/100
+                    </StatusPill>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        <Card title="Risk Explainability">
+          <div className="mt-5 grid gap-4 xl:grid-cols-[0.75fr_1.25fr]">
+            <div className="rounded-3xl bg-[var(--surface-muted)] p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Core Signals</p>
+              <div className="mt-4 space-y-3 text-sm text-[var(--foreground)]">
+                <p>Projected margin percent: {projectedMarginPercent}%</p>
+                <p>Demand score: {demandScore}/100</p>
+                <p>Liquidity score: {liquidityScore}/100</p>
+                <p>Risk score: {riskScore}/100</p>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              {riskFactors.map((factor) => (
+                <div
+                  key={factor}
+                  className="rounded-3xl border border-[var(--border)] bg-white p-4 text-sm text-[var(--foreground)]"
+                >
+                  {factor}
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
       </div>
     </main>
   );
