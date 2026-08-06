@@ -1,6 +1,7 @@
 import { Card, StatusPill } from "@carvia/ui";
 import { requireOnboardedSession } from "../../lib/auth";
 import { getProviderOverview } from "../../lib/providers";
+import { markProviderSync, resetProviderCredential, upsertProviderCredential } from "./actions";
 
 const statusTone = {
   CONNECTED: "success",
@@ -25,39 +26,113 @@ export default async function ProvidersPage() {
         </div>
 
         <div className="grid gap-5 xl:grid-cols-2">
-          {providers.map((provider) => (
-            <Card key={provider.providerKey} title={provider.displayName}>
-              <div className="mt-5 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-[var(--navy)]">{provider.type}</p>
-                    <p className="mt-1 text-sm text-[var(--foreground-muted)]">{provider.providerKey}</p>
-                  </div>
-                  <StatusPill tone={statusTone[provider.status]}>{provider.status.replaceAll("_", " ")}</StatusPill>
-                </div>
+          {providers.map((provider) => {
+            const isMock = provider.providerKey === "mock";
 
-                <div className="rounded-3xl bg-[var(--surface-muted)] p-4">
-                  <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Status note</p>
-                  <p className="mt-2 text-sm text-[var(--foreground)]">{provider.credentialsHint}</p>
-                </div>
+            return (
+              <Card key={provider.providerKey} title={provider.displayName}>
+                <div className="mt-5 space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-[var(--navy)]">{provider.type}</p>
+                      <p className="mt-1 text-sm text-[var(--foreground-muted)]">{provider.providerKey}</p>
+                    </div>
+                    <StatusPill tone={statusTone[provider.status]}>{provider.status.replaceAll("_", " ")}</StatusPill>
+                  </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-3xl border border-[var(--border)] bg-white p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Last sync</p>
-                    <p className="mt-2 text-sm font-medium text-[var(--navy)]">
-                      {provider.lastSyncAt ? new Date(provider.lastSyncAt).toLocaleString("de-DE") : "Not synced yet"}
-                    </p>
+                  <div className="rounded-3xl bg-[var(--surface-muted)] p-4">
+                    <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Status note</p>
+                    <p className="mt-2 text-sm text-[var(--foreground)]">{provider.credentialsHint}</p>
                   </div>
-                  <div className="rounded-3xl border border-[var(--border)] bg-white p-4">
-                    <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Policy</p>
-                    <p className="mt-2 text-sm font-medium text-[var(--navy)]">
-                      {provider.providerKey === "mock" ? "Safe for local MVP testing" : "Manual enablement required"}
-                    </p>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-3xl border border-[var(--border)] bg-white p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Last sync</p>
+                      <p className="mt-2 text-sm font-medium text-[var(--navy)]">
+                        {provider.lastSyncAt ? new Date(provider.lastSyncAt).toLocaleString("de-DE") : "Not synced yet"}
+                      </p>
+                    </div>
+                    <div className="rounded-3xl border border-[var(--border)] bg-white p-4">
+                      <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Policy</p>
+                      <p className="mt-2 text-sm font-medium text-[var(--navy)]">
+                        {isMock ? "Safe for local MVP testing" : "Manual enablement required"}
+                      </p>
+                    </div>
                   </div>
+
+                  {isMock ? (
+                    <div className="rounded-3xl border border-[var(--border)] bg-white p-4">
+                      <p className="text-sm font-medium text-[var(--navy)]">Mock provider</p>
+                      <p className="mt-2 text-sm text-[var(--foreground-muted)]">
+                        This adapter is intentionally fixed in development mode and does not require tenant-managed credentials.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 xl:grid-cols-[1fr_auto]">
+                      <form action={upsertProviderCredential} className="rounded-3xl border border-[var(--border)] bg-white p-4">
+                        <input type="hidden" name="providerKey" value={provider.providerKey} />
+                        <div className="grid gap-4">
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-medium text-[var(--navy)]">Connection status</span>
+                            <select
+                              name="status"
+                              defaultValue={provider.status}
+                              className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3"
+                            >
+                              <option value="NOT_CONFIGURED">Not configured</option>
+                              <option value="CONNECTED">Connected</option>
+                              <option value="DISABLED">Disabled</option>
+                              <option value="ERROR">Error</option>
+                            </select>
+                          </label>
+
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-medium text-[var(--navy)]">Credentials hint</span>
+                            <textarea
+                              name="credentialsHint"
+                              rows={4}
+                              defaultValue={provider.credentialsHint ?? ""}
+                              className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)] outline-none"
+                              placeholder="Example: access approved, API key stored outside repo, awaiting sandbox verification"
+                            />
+                          </label>
+
+                          <button
+                            type="submit"
+                            className="rounded-full bg-[var(--navy)] px-4 py-2 text-sm font-semibold text-white"
+                          >
+                            Save provider setup
+                          </button>
+                        </div>
+                      </form>
+
+                      <div className="flex flex-col gap-3">
+                        <form action={markProviderSync}>
+                          <input type="hidden" name="providerKey" value={provider.providerKey} />
+                          <button
+                            type="submit"
+                            className="w-full rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
+                          >
+                            Mark sync now
+                          </button>
+                        </form>
+
+                        <form action={resetProviderCredential}>
+                          <input type="hidden" name="providerKey" value={provider.providerKey} />
+                          <button
+                            type="submit"
+                            className="w-full rounded-full border border-[rgba(190,63,51,0.2)] bg-[rgba(190,63,51,0.08)] px-4 py-2 text-sm font-medium text-[var(--danger)]"
+                          >
+                            Reset setup
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       </div>
     </main>

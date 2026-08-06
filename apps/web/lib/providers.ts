@@ -3,7 +3,7 @@ import { MockVehicleProvider } from "@carvia/providers";
 
 const mockVehicleProvider = new MockVehicleProvider();
 
-const providerCatalog = [
+export const providerCatalog = [
   {
     providerKey: "mock",
     displayName: "Mock Vehicle Feed",
@@ -25,6 +25,8 @@ const providerCatalog = [
     type: "Routing"
   }
 ] as const;
+
+export type ProviderCatalogEntry = (typeof providerCatalog)[number];
 
 export async function getProviderOverview(companyId: string) {
   const [credentials, mockHealth] = await Promise.all([

@@ -46,4 +46,4 @@
 
 - deal pipeline
 - acquisition workflow states
-- provider credential management
+- alert delivery and notification policy
