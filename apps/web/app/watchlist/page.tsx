@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Card, StatusPill } from "@carvia/ui";
+import { activityTypeLabels } from "../../lib/activities";
+import { createWatchlistActivity, deleteWatchlistActivity } from "../activities/actions";
 import { completeWatchlistTask, createWatchlistTask } from "../tasks/actions";
 import { requireOnboardedSession } from "../../lib/auth";
 import { getWatchlistItems, getWatchlistPipelineSummary } from "../../lib/watchlist";
@@ -17,6 +19,15 @@ const stageTone = {
   PASSED: "danger",
   READY_TO_BUY: "success",
   REVIEWING: "info"
+} as const;
+
+const activityTone = {
+  CALL: "warning",
+  DOCUMENT: "info",
+  EMAIL: "success",
+  MEETING: "danger",
+  MESSAGE: "info",
+  NOTE: "info"
 } as const;
 
 function formatStage(stage: string) {
@@ -152,6 +163,41 @@ export default async function WatchlistPage() {
                       </div>
                     </div>
 
+                    <div className="rounded-3xl bg-[var(--surface-muted)] p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Recent activity</p>
+                        <StatusPill tone={item.recentActivities.length > 0 ? "success" : "info"}>{item.recentActivities.length}</StatusPill>
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        {item.recentActivities.length === 0 ? (
+                          <p className="text-sm text-[var(--foreground-muted)]">No contact log yet.</p>
+                        ) : (
+                          item.recentActivities.slice(0, 3).map((activity) => (
+                            <div key={activity.id} className="rounded-2xl border border-[var(--border)] bg-white p-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <StatusPill tone={activityTone[activity.type]}>{activityTypeLabels[activity.type]}</StatusPill>
+                                  </div>
+                                  <p className="mt-2 text-sm font-medium text-[var(--navy)]">{activity.summary}</p>
+                                  <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">
+                                    {activity.createdByName ?? "Unknown teammate"} |{" "}
+                                    {activity.happenedAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
+                                  </p>
+                                </div>
+                                <form action={deleteWatchlistActivity}>
+                                  <input type="hidden" name="activityId" value={activity.id} />
+                                  <button type="submit" className="text-xs font-semibold text-[var(--danger)] underline-offset-4 hover:underline">
+                                    Delete
+                                  </button>
+                                </form>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
                     {item.analysis ? (
                       <div className="flex flex-wrap gap-3">
                         <Link
@@ -262,6 +308,50 @@ export default async function WatchlistPage() {
                           className="rounded-full bg-[var(--navy)] px-4 py-2 text-sm font-semibold text-white"
                         >
                           Save task
+                        </button>
+                      </div>
+                    </form>
+
+                    <form action={createWatchlistActivity} className="rounded-3xl bg-[var(--surface-muted)] p-4">
+                      <input type="hidden" name="watchlistId" value={item.id} />
+                      <p className="text-sm font-medium text-[var(--navy)]">Log activity</p>
+                      <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                        Capture calls, emails, meetings, document checks, and negotiation updates.
+                      </p>
+                      <div className="mt-4 grid gap-4">
+                        <select
+                          name="type"
+                          defaultValue="CALL"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                        >
+                          <option value="CALL">Call</option>
+                          <option value="EMAIL">Email</option>
+                          <option value="MESSAGE">Message</option>
+                          <option value="DOCUMENT">Document</option>
+                          <option value="MEETING">Meeting</option>
+                          <option value="NOTE">Internal note</option>
+                        </select>
+                        <input
+                          name="summary"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          placeholder="Seller confirmed service book is complete"
+                        />
+                        <textarea
+                          name="details"
+                          rows={3}
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)] outline-none"
+                          placeholder="Optional context for the team"
+                        />
+                        <input
+                          name="happenedAt"
+                          type="date"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                        />
+                        <button
+                          type="submit"
+                          className="rounded-full bg-[var(--navy)] px-4 py-2 text-sm font-semibold text-white"
+                        >
+                          Save activity
                         </button>
                       </div>
                     </form>

@@ -5,6 +5,7 @@ export const shellSections = [
   { label: "Deal Check", value: "Intelligence", href: "/deal-check" },
   { label: "Market Search", value: "Opportunity Scan", href: "/market-search" },
   { label: "Pipeline", value: "Board View", href: "/pipeline" },
+  { label: "Activity", value: "Deal Timeline", href: "/activities" },
   { label: "Tasks", value: "Follow-ups", href: "/tasks" },
   { label: "Watchlist", value: "Tracked Vehicles", href: "/watchlist" },
   { label: "Imports", value: "CSV Intake", href: "/imports" },

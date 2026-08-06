@@ -47,6 +47,15 @@ enum TaskStatus {
   DONE
 }
 
+enum WatchlistActivityType {
+  CALL
+  EMAIL
+  MESSAGE
+  DOCUMENT
+  MEETING
+  NOTE
+}
+
 model User {
   id                   String    @id @default(cuid())
   email                String    @unique
@@ -75,6 +84,7 @@ model Company {
   profiles             DealerProfile[]
   analyses             VehicleAnalysis[]
   watchlistItems       Watchlist[]
+  watchlistActivities  WatchlistActivity[]
   watchlistTasks       WatchlistTask[]
   savedSearches        SavedSearch[]
   importRuns           ImportRun[]
@@ -189,11 +199,29 @@ model Watchlist {
   stage        WatchlistStage    @default(NEW)
   priority     WatchlistPriority @default(MEDIUM)
   nextActionAt DateTime?
+  activities   WatchlistActivity[]
   tasks        WatchlistTask[]
   createdAt    DateTime          @default(now())
 
   @@index([companyId, vehicleId])
   @@unique([companyId, vehicleId])
+}
+
+model WatchlistActivity {
+  id            String                @id @default(cuid())
+  companyId      String
+  company        Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  watchlistId    String
+  watchlist      Watchlist             @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  type           WatchlistActivityType
+  summary        String
+  details        String?
+  happenedAt     DateTime              @default(now())
+  createdByName  String?
+  createdAt      DateTime              @default(now())
+
+  @@index([companyId, happenedAt])
+  @@index([watchlistId, createdAt])
 }
 
 model WatchlistTask {

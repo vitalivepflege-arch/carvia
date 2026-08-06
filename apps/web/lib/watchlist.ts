@@ -21,7 +21,7 @@ export async function getWatchlistItems(companyId: string) {
   }
 
   const vehicleIds = [...new Set(items.map((item) => item.vehicleId))];
-  const [vehicles, analyses, tasks] = await Promise.all([
+  const [vehicles, analyses, tasks, activities] = await Promise.all([
     prisma.vehicle.findMany({
       where: {
         id: {
@@ -76,12 +76,32 @@ export async function getWatchlistItems(companyId: string) {
         dueAt: true,
         createdAt: true
       }
+    }),
+    prisma.watchlistActivity.findMany({
+      where: {
+        companyId,
+        watchlistId: {
+          in: items.map((item) => item.id)
+        }
+      },
+      orderBy: [{ happenedAt: "desc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        watchlistId: true,
+        type: true,
+        summary: true,
+        details: true,
+        createdByName: true,
+        happenedAt: true,
+        createdAt: true
+      }
     })
   ]);
 
   const vehicleMap = new Map(vehicles.map((vehicle) => [vehicle.id, vehicle]));
   const latestAnalysisByVehicle = new Map<string, (typeof analyses)[number]>();
   const tasksByWatchlist = new Map<string, Array<(typeof tasks)[number]>>();
+  const activitiesByWatchlist = new Map<string, Array<(typeof activities)[number]>>();
 
   for (const analysis of analyses) {
     if (analysis.vehicleId && !latestAnalysisByVehicle.has(analysis.vehicleId)) {
@@ -95,10 +115,17 @@ export async function getWatchlistItems(companyId: string) {
     tasksByWatchlist.set(task.watchlistId, existing);
   }
 
+  for (const activity of activities) {
+    const existing = activitiesByWatchlist.get(activity.watchlistId) ?? [];
+    existing.push(activity);
+    activitiesByWatchlist.set(activity.watchlistId, existing);
+  }
+
   return items
     .map((item) => ({
       ...item,
       analysis: latestAnalysisByVehicle.get(item.vehicleId) ?? null,
+      recentActivities: activitiesByWatchlist.get(item.id) ?? [],
       openTasks: tasksByWatchlist.get(item.id) ?? [],
       vehicle: vehicleMap.get(item.vehicleId) ?? null
     }))
@@ -120,6 +147,7 @@ export async function getWatchlistItems(companyId: string) {
             projectedMargin: item.analysis.projectedMargin ? Number(item.analysis.projectedMargin) : null
           }
         : null,
+      recentActivities: item.recentActivities,
       openTasks: item.openTasks,
       vehicle: {
         ...item.vehicle,

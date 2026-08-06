@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Card, StatusPill } from "@carvia/ui";
+import { activityTypeLabels } from "../../lib/activities";
+import { createWatchlistActivity } from "../activities/actions";
 import { completeWatchlistTask, createWatchlistTask } from "../tasks/actions";
 import { requireOnboardedSession } from "../../lib/auth";
 import { getWatchlistItems, getWatchlistPipelineSummary, watchlistStageLabels, watchlistStageOrder } from "../../lib/watchlist";
@@ -17,6 +19,15 @@ const stageAccent = {
   PASSED: "border-[rgba(190,63,51,0.24)] bg-[rgba(190,63,51,0.06)]",
   READY_TO_BUY: "border-[rgba(31,140,84,0.24)] bg-[rgba(31,140,84,0.08)]",
   REVIEWING: "border-[rgba(50,85,120,0.18)] bg-[rgba(17,37,59,0.04)]"
+} as const;
+
+const activityTone = {
+  CALL: "warning",
+  DOCUMENT: "info",
+  EMAIL: "success",
+  MEETING: "danger",
+  MESSAGE: "info",
+  NOTE: "info"
 } as const;
 
 function formatDate(value: Date | null) {
@@ -181,6 +192,30 @@ export default async function PipelinePage() {
                           </div>
                         </div>
 
+                        <div className="mt-4 rounded-2xl bg-[var(--surface-muted)] p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">Recent activity</p>
+                            <StatusPill tone={item.recentActivities.length > 0 ? "success" : "info"}>{item.recentActivities.length}</StatusPill>
+                          </div>
+                          <div className="mt-3 space-y-3">
+                            {item.recentActivities.length === 0 ? (
+                              <p className="text-sm text-[var(--foreground-muted)]">No contact log yet.</p>
+                            ) : (
+                              item.recentActivities.slice(0, 2).map((activity) => (
+                                <div key={activity.id} className="rounded-2xl border border-[var(--border)] bg-white p-3">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <StatusPill tone={activityTone[activity.type]}>{activityTypeLabels[activity.type]}</StatusPill>
+                                  </div>
+                                  <p className="mt-2 text-sm font-medium text-[var(--navy)]">{activity.summary}</p>
+                                  <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">
+                                    {activity.happenedAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
+                                  </p>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+
                         {item.note ? (
                           <div className="mt-4 rounded-2xl border border-[var(--border)] bg-white p-3">
                             <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">Internal note</p>
@@ -254,6 +289,44 @@ export default async function PipelinePage() {
                             className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
                           >
                             Save task
+                          </button>
+                        </form>
+
+                        <form action={createWatchlistActivity} className="mt-4 space-y-3">
+                          <input type="hidden" name="watchlistId" value={item.id} />
+                          <select
+                            name="type"
+                            defaultValue="CALL"
+                            className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          >
+                            <option value="CALL">Call</option>
+                            <option value="EMAIL">Email</option>
+                            <option value="MESSAGE">Message</option>
+                            <option value="DOCUMENT">Document</option>
+                            <option value="MEETING">Meeting</option>
+                            <option value="NOTE">Internal note</option>
+                          </select>
+                          <input
+                            name="summary"
+                            className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                            placeholder="Seller accepted next negotiation slot"
+                          />
+                          <textarea
+                            name="details"
+                            rows={3}
+                            className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)] outline-none"
+                            placeholder="Optional team context"
+                          />
+                          <input
+                            name="happenedAt"
+                            type="date"
+                            className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                          <button
+                            type="submit"
+                            className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
+                          >
+                            Save activity
                           </button>
                         </form>
                       </article>

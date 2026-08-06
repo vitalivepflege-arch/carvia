@@ -11,10 +11,21 @@ import {
   deriveRiskScore,
   summarizeMarket
 } from "../../../lib/analysis-services";
+import { activityTypeLabels } from "../../../lib/activities";
+import { createWatchlistActivity } from "../../activities/actions";
 import { addVehicleToWatchlist } from "../../watchlist/actions";
 import { requireOnboardedSession } from "../../../lib/auth";
 
 const mockProvider = new MockVehicleProvider();
+
+const activityTone = {
+  CALL: "warning",
+  DOCUMENT: "info",
+  EMAIL: "success",
+  MEETING: "danger",
+  MESSAGE: "info",
+  NOTE: "info"
+} as const;
 
 export default async function AnalysisDetailPage({
   params
@@ -51,6 +62,17 @@ export default async function AnalysisDetailPage({
       }
     }
   });
+
+  const watchlistActivities = watchlistItem
+    ? await prisma.watchlistActivity.findMany({
+        where: {
+          companyId: session.user.companyId!,
+          watchlistId: watchlistItem.id
+        },
+        orderBy: [{ happenedAt: "desc" }, { createdAt: "desc" }],
+        take: 5
+      })
+    : [];
 
   const comparables = await mockProvider.getPriceData({
     id: vehicle.id,
@@ -237,6 +259,78 @@ export default async function AnalysisDetailPage({
                   </Link>
                 )}
               </div>
+
+              {watchlistItem ? (
+                <div className="rounded-3xl border border-[var(--border)] bg-white p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-[var(--navy)]">Deal activity</p>
+                      <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                        Capture seller responses, paperwork updates, and negotiation progress on the same tracked vehicle.
+                      </p>
+                    </div>
+                    <StatusPill tone={watchlistActivities.length > 0 ? "success" : "info"}>{watchlistActivities.length}</StatusPill>
+                  </div>
+
+                  <div className="mt-4 space-y-3">
+                    {watchlistActivities.length === 0 ? (
+                      <p className="text-sm text-[var(--foreground-muted)]">No activity logged yet for this tracked vehicle.</p>
+                    ) : (
+                      watchlistActivities.map((activity) => (
+                        <div key={activity.id} className="rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] p-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <StatusPill tone={activityTone[activity.type]}>{activityTypeLabels[activity.type]}</StatusPill>
+                          </div>
+                          <p className="mt-2 text-sm font-medium text-[var(--navy)]">{activity.summary}</p>
+                          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">
+                            {activity.createdByName ?? "Unknown teammate"} |{" "}
+                            {activity.happenedAt.toLocaleDateString("en-US", { dateStyle: "medium" })}
+                          </p>
+                          {activity.details ? <p className="mt-2 text-sm text-[var(--foreground)]">{activity.details}</p> : null}
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <form action={createWatchlistActivity} className="mt-4 space-y-3">
+                    <input type="hidden" name="watchlistId" value={watchlistItem.id} />
+                    <select
+                      name="type"
+                      defaultValue="CALL"
+                      className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                    >
+                      <option value="CALL">Call</option>
+                      <option value="EMAIL">Email</option>
+                      <option value="MESSAGE">Message</option>
+                      <option value="DOCUMENT">Document</option>
+                      <option value="MEETING">Meeting</option>
+                      <option value="NOTE">Internal note</option>
+                    </select>
+                    <input
+                      name="summary"
+                      className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                      placeholder="Seller sent updated maintenance records"
+                    />
+                    <textarea
+                      name="details"
+                      rows={3}
+                      className="w-full rounded-2xl border border-[var(--border)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--navy)] outline-none"
+                      placeholder="Optional details for the team"
+                    />
+                    <input
+                      name="happenedAt"
+                      type="date"
+                      className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-full bg-[var(--navy)] px-4 py-2 text-sm font-semibold text-white"
+                    >
+                      Save activity
+                    </button>
+                  </form>
+                </div>
+              ) : null}
             </div>
           </Card>
 
