@@ -328,6 +328,8 @@ model ProviderCredential {
   nextSyncAt      DateTime?
   credentialsHint String?
   lastSyncAt      DateTime?
+  lastErrorAt     DateTime?
+  lastErrorMessage String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 

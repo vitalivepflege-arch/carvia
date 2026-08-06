@@ -1,7 +1,7 @@
 import { Card, StatusPill } from "@carvia/ui";
 import { requireOnboardedSession } from "../../lib/auth";
 import { getProviderControlSummary, getProviderOverview } from "../../lib/providers";
-import { markProviderSync, resetProviderCredential, upsertProviderCredential } from "./actions";
+import { markProviderSync, markProviderSyncError, resetProviderCredential, upsertProviderCredential } from "./actions";
 
 const statusTone = {
   CONNECTED: "success",
@@ -39,7 +39,7 @@ export default async function ProvidersPage() {
             { label: "Connected", value: String(controlSummary.connectedCount), delta: "Providers marked connected" },
             { label: "Scheduled", value: String(controlSummary.scheduledCount), delta: "Cadence-driven sync setups" },
             { label: "Due Now", value: String(controlSummary.dueSyncCount), delta: `Scheduled runs due on or before ${todayLabel}` },
-            { label: "Catalog", value: String(providers.length), delta: "Known adapter boundaries" }
+            { label: "Errors", value: String(controlSummary.errorCount), delta: "Providers needing operator attention" }
           ].map((metric) => (
             <Card key={metric.label} title={metric.label}>
               <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
@@ -66,6 +66,12 @@ export default async function ProvidersPage() {
                   <div className="rounded-3xl bg-[var(--surface-muted)] p-4">
                     <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Status note</p>
                     <p className="mt-2 text-sm text-[var(--foreground)]">{provider.credentialsHint}</p>
+                    {provider.lastErrorMessage ? (
+                      <p className="mt-3 text-sm text-[var(--danger)]">
+                        Last error: {provider.lastErrorMessage}
+                        {provider.lastErrorAt ? ` (${new Date(provider.lastErrorAt).toLocaleString("de-DE")})` : ""}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -162,6 +168,21 @@ export default async function ProvidersPage() {
                             className="w-full rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
                           >
                             Run sync now
+                          </button>
+                        </form>
+
+                        <form action={markProviderSyncError} className="space-y-2">
+                          <input type="hidden" name="providerKey" value={provider.providerKey} />
+                          <input
+                            name="message"
+                            className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                            placeholder="Log sync error"
+                          />
+                          <button
+                            type="submit"
+                            className="w-full rounded-full border border-[rgba(190,63,51,0.2)] bg-[rgba(190,63,51,0.08)] px-4 py-2 text-sm font-medium text-[var(--danger)]"
+                          >
+                            Mark error
                           </button>
                         </form>
 

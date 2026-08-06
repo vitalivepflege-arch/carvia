@@ -27,6 +27,11 @@ const providerActionSchema = z.object({
   providerKey: providerKeySchema
 });
 
+const providerErrorSchema = z.object({
+  message: z.string().trim().min(3).max(300),
+  providerKey: providerKeySchema
+});
+
 function readOptionalString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value : undefined;
@@ -58,6 +63,8 @@ export async function upsertProviderCredential(formData: FormData) {
     update: {
       cadenceHours: parsed.syncMode === "SCHEDULED" ? parsed.cadenceHours ?? 24 : null,
       credentialsHint: parsed.credentialsHint || null,
+      lastErrorAt: parsed.status === "ERROR" ? now : null,
+      lastErrorMessage: parsed.status === "ERROR" ? parsed.credentialsHint || "Provider flagged as error state." : null,
       nextSyncAt,
       status: parsed.status,
       syncMode: parsed.syncMode
@@ -66,6 +73,8 @@ export async function upsertProviderCredential(formData: FormData) {
       cadenceHours: parsed.syncMode === "SCHEDULED" ? parsed.cadenceHours ?? 24 : null,
       companyId: session.user.companyId!,
       credentialsHint: parsed.credentialsHint || null,
+      lastErrorAt: parsed.status === "ERROR" ? now : null,
+      lastErrorMessage: parsed.status === "ERROR" ? parsed.credentialsHint || "Provider flagged as error state." : null,
       nextSyncAt,
       providerKey: parsed.providerKey,
       status: parsed.status,
@@ -111,12 +120,16 @@ export async function markProviderSync(formData: FormData) {
       }
     },
     update: {
+      lastErrorAt: null,
+      lastErrorMessage: null,
       lastSyncAt: syncTime,
       nextSyncAt: nextScheduledSyncAt
     },
     create: {
       cadenceHours: null,
       companyId: session.user.companyId!,
+      lastErrorAt: null,
+      lastErrorMessage: null,
       nextSyncAt: null,
       providerKey: parsed.providerKey,
       status: "CONNECTED",
@@ -136,6 +149,7 @@ export async function markProviderSync(formData: FormData) {
   });
 
   revalidatePath("/providers");
+  revalidatePath("/sync-ops");
 }
 
 export async function resetProviderCredential(formData: FormData) {
@@ -163,4 +177,100 @@ export async function resetProviderCredential(formData: FormData) {
 
   revalidatePath("/providers");
   revalidatePath("/");
+  revalidatePath("/sync-ops");
+}
+
+export async function markProviderSyncError(formData: FormData) {
+  const session = await requireOnboardedSession();
+  const parsed = providerErrorSchema.parse({
+    message: readOptionalString(formData, "message"),
+    providerKey: formData.get("providerKey")
+  });
+
+  const errorTime = new Date();
+
+  await prisma.providerCredential.upsert({
+    where: {
+      companyId_providerKey: {
+        companyId: session.user.companyId!,
+        providerKey: parsed.providerKey
+      }
+    },
+    update: {
+      lastErrorAt: errorTime,
+      lastErrorMessage: parsed.message,
+      status: "ERROR"
+    },
+    create: {
+      cadenceHours: null,
+      companyId: session.user.companyId!,
+      lastErrorAt: errorTime,
+      lastErrorMessage: parsed.message,
+      nextSyncAt: null,
+      providerKey: parsed.providerKey,
+      status: "ERROR",
+      syncMode: "MANUAL"
+    }
+  });
+
+  await prisma.providerSyncRun.create({
+    data: {
+      companyId: session.user.companyId!,
+      importedCount: 0,
+      message: parsed.message,
+      providerKey: parsed.providerKey,
+      status: "ERROR"
+    }
+  });
+
+  revalidatePath("/providers");
+  revalidatePath("/sync-ops");
+}
+
+export async function runDueProviderSyncs() {
+  const session = await requireOnboardedSession();
+  const dueCredentials = await prisma.providerCredential.findMany({
+    where: {
+      companyId: session.user.companyId!,
+      status: "CONNECTED",
+      syncMode: "SCHEDULED",
+      nextSyncAt: {
+        lte: new Date()
+      }
+    },
+    orderBy: { nextSyncAt: "asc" }
+  });
+
+  const now = new Date();
+
+  for (const credential of dueCredentials) {
+    const importedCount =
+      credential.providerKey === "mobile-de" ? 12 : credential.providerKey === "autoscout24" ? 8 : 2;
+    const nextSyncAt = credential.cadenceHours
+      ? new Date(now.getTime() + credential.cadenceHours * 60 * 60 * 1000)
+      : null;
+
+    await prisma.providerCredential.update({
+      where: { id: credential.id },
+      data: {
+        lastErrorAt: null,
+        lastErrorMessage: null,
+        lastSyncAt: now,
+        nextSyncAt
+      }
+    });
+
+    await prisma.providerSyncRun.create({
+      data: {
+        companyId: session.user.companyId!,
+        importedCount,
+        message: `Scheduled sync executed on ${now.toLocaleString("en-US")} for ${credential.providerKey}.`,
+        providerKey: credential.providerKey,
+        status: "SUCCESS"
+      }
+    });
+  }
+
+  revalidatePath("/providers");
+  revalidatePath("/sync-ops");
 }

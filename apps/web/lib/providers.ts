@@ -76,6 +76,8 @@ export async function getProviderOverview(companyId: string) {
           credential?.credentialsHint ??
           "Credentials not configured yet. Adapter stays disabled until explicit approval and official access exist.",
         displayName: provider.displayName,
+        lastErrorAt: credential?.lastErrorAt ?? null,
+        lastErrorMessage: credential?.lastErrorMessage ?? null,
         lastSyncAt: credential?.lastSyncAt ?? null,
         nextSyncAt: credential?.nextSyncAt ?? null,
         recentRuns: providerRuns,
@@ -91,6 +93,7 @@ export async function getProviderControlSummary(companyId: string) {
   const credentials = await prisma.providerCredential.findMany({
     where: { companyId },
     select: {
+      lastErrorAt: true,
       providerKey: true,
       status: true,
       syncMode: true,
@@ -108,10 +111,14 @@ export async function getProviderControlSummary(companyId: string) {
 
   const scheduledCount = credentials.filter((credential) => credential.syncMode === "SCHEDULED").length;
   const connectedCount = credentials.filter((credential) => credential.status === "CONNECTED").length;
+  const errorCount = credentials.filter(
+    (credential) => credential.status === "ERROR" || credential.lastErrorAt !== null
+  ).length;
 
   return {
     connectedCount,
     dueSyncCount,
+    errorCount,
     scheduledCount
   };
 }
