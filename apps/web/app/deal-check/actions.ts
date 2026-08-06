@@ -5,6 +5,13 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireOnboardedSession } from "../../lib/auth";
 import { analyzeDeal } from "../../lib/deal-check";
+import {
+  normalizeFirstRegistration,
+  normalizeFuelType,
+  normalizeMake,
+  normalizeModel,
+  normalizeTransmission
+} from "../../lib/normalization";
 
 const dealCheckSchema = z.object({
   auctionFee: z.coerce.number().nonnegative(),
@@ -42,7 +49,23 @@ export async function createDealCheck(formData: FormData) {
     variant: formData.get("variant")
   });
 
-  const result = await analyzeDeal(parsed);
+  const normalizedMake = normalizeMake(parsed.make).value ?? parsed.make;
+  const normalizedModel = normalizeModel(parsed.model) ?? parsed.model;
+  const normalizedFuelType = normalizeFuelType(parsed.fuelType).value ?? parsed.fuelType;
+  const normalizedTransmission =
+    normalizeTransmission(parsed.transmission).value ?? parsed.transmission;
+  const normalizedFirstRegistration =
+    normalizeFirstRegistration(parsed.firstRegistration).value ?? parsed.firstRegistration;
+
+  const result = await analyzeDeal({
+    ...parsed,
+    firstRegistration: normalizedFirstRegistration,
+    fuelType: normalizedFuelType,
+    make: normalizedMake,
+    model: normalizedModel,
+    transmission: normalizedTransmission,
+    variant: parsed.variant.trim()
+  });
 
   const vehicle = await prisma.vehicle.create({
     data: {

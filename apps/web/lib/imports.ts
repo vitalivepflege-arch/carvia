@@ -1,5 +1,15 @@
 import { prisma } from "@carvia/database";
 import { importVehicleRowSchema, type ImportVehicleRow } from "@carvia/domain";
+import {
+  collectVehicleSoftWarnings,
+  normalizeFirstRegistration,
+  normalizeFuelType,
+  normalizeFreeText,
+  normalizeMake,
+  normalizeModel,
+  normalizePostalCode,
+  normalizeTransmission
+} from "./normalization";
 
 const expectedHeaders = [
   "providerVehicleId",
@@ -48,17 +58,8 @@ function parseCsvLine(line: string) {
   return values;
 }
 
-function readNullableString(value: string | undefined) {
-  if (!value) {
-    return null;
-  }
-
-  const normalized = value.trim();
-  return normalized.length > 0 ? normalized : null;
-}
-
 function readNullableNumber(value: string | undefined) {
-  const normalized = readNullableString(value);
+  const normalized = normalizeFreeText(value);
 
   if (!normalized) {
     return null;
@@ -97,24 +98,44 @@ export function parseVehicleImportCsv(csv: string) {
 
   const rows = lines.slice(1).map((line, index) => {
     const values = parseCsvLine(line);
+    const make = normalizeMake(values[headerIndex.get("make") ?? -1]);
+    const firstRegistration = normalizeFirstRegistration(values[headerIndex.get("firstRegistration") ?? -1]);
+    const fuelType = normalizeFuelType(values[headerIndex.get("fuelType") ?? -1]);
+    const transmission = normalizeTransmission(values[headerIndex.get("transmission") ?? -1]);
+    const postalCode = normalizePostalCode(values[headerIndex.get("postalCode") ?? -1]);
     const candidate = {
-      firstRegistration: readNullableString(values[headerIndex.get("firstRegistration") ?? -1]),
-      fuelType: readNullableString(values[headerIndex.get("fuelType") ?? -1]),
-      listingUrl: readNullableString(values[headerIndex.get("listingUrl") ?? -1]),
-      make: readNullableString(values[headerIndex.get("make") ?? -1]) ?? "",
+      firstRegistration: firstRegistration.value,
+      fuelType: fuelType.value,
+      listingUrl: normalizeFreeText(values[headerIndex.get("listingUrl") ?? -1]),
+      make: make.value ?? "",
       mileageKm: readNullableNumber(values[headerIndex.get("mileageKm") ?? -1]),
-      model: readNullableString(values[headerIndex.get("model") ?? -1]) ?? "",
-      postalCode: readNullableString(values[headerIndex.get("postalCode") ?? -1]),
+      model: normalizeModel(values[headerIndex.get("model") ?? -1]) ?? "",
+      postalCode: postalCode.value,
       powerHp: readNullableNumber(values[headerIndex.get("powerHp") ?? -1]),
       priceGross: readNullableNumber(values[headerIndex.get("priceGross") ?? -1]),
-      providerVehicleId: readNullableString(values[headerIndex.get("providerVehicleId") ?? -1]) ?? "",
-      transmission: readNullableString(values[headerIndex.get("transmission") ?? -1]),
-      variant: readNullableString(values[headerIndex.get("variant") ?? -1])
+      providerVehicleId: normalizeFreeText(values[headerIndex.get("providerVehicleId") ?? -1]) ?? "",
+      transmission: transmission.value,
+      variant: normalizeFreeText(values[headerIndex.get("variant") ?? -1])
     };
+
+    const warnings = [
+      ...make.warnings,
+      ...firstRegistration.warnings,
+      ...fuelType.warnings,
+      ...transmission.warnings,
+      ...postalCode.warnings,
+      ...collectVehicleSoftWarnings({
+        firstRegistration: candidate.firstRegistration,
+        mileageKm: candidate.mileageKm,
+        powerHp: candidate.powerHp,
+        priceGross: candidate.priceGross
+      })
+    ];
 
     return {
       lineNumber: index + 2,
-      parsed: importVehicleRowSchema.safeParse(candidate)
+      parsed: importVehicleRowSchema.safeParse(candidate),
+      warnings
     };
   });
 
@@ -137,6 +158,9 @@ export async function saveVehicleImportRun(input: {
     }
 
     const vehicleRow: ImportVehicleRow = row.parsed.data;
+    for (const warning of row.warnings) {
+      warnings.push(`Line ${row.lineNumber}: ${warning}`);
+    }
 
     const vehicle = await prisma.vehicle.upsert({
       where: {

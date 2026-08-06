@@ -73,6 +73,15 @@ export default async function ImportsPage({
                 `fuelType`, `transmission`, `powerHp`, `priceGross`, `postalCode`, `listingUrl`.
               </div>
 
+              <div className="rounded-3xl border border-[var(--border)] bg-white p-4 text-sm text-[var(--foreground)]">
+                <p className="font-medium text-[var(--navy)]">Normalization safety rails</p>
+                <ul className="mt-3 space-y-2">
+                  <li>Make, fuel type, transmission, and first registration are normalized before persistence.</li>
+                  <li>Malformed rows are skipped and recorded in the import warnings.</li>
+                  <li>Suspicious but valid values, like extreme mileage or very low pricing, generate soft warnings.</li>
+                </ul>
+              </div>
+
               <button
                 type="submit"
                 className="rounded-full bg-[var(--navy)] px-5 py-3 text-sm font-semibold text-white"
