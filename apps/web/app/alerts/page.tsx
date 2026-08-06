@@ -46,14 +46,14 @@ export default async function AlertsPage() {
           <p className="text-xs uppercase tracking-[0.28em] text-[var(--foreground-muted)]">Alerts</p>
           <h1 className="mt-2 text-4xl font-semibold text-[var(--navy)]">Daily review signals</h1>
           <p className="mt-2 max-w-3xl text-sm text-[var(--foreground-muted)]">
-            In-app alerts combine due pipeline actions, saved search changes, and buy-ready opportunities so the team can review {todayLabel} from one place.
+            In-app alerts combine due pipeline actions, saved search changes, due follow-up tasks, and buy-ready opportunities so the team can review {todayLabel} from one place.
           </p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
             { label: "Actionable", value: String(alertCenter.summary.actionableCount), delta: "Signals requiring attention" },
-            { label: "Due Today", value: String(alertCenter.summary.dueTodayCount), delta: `Watchlist follow-ups due on ${todayLabel}` },
+            { label: "Due Today", value: String(alertCenter.summary.dueTodayCount), delta: `Watchlist and task follow-ups due on ${todayLabel}` },
             { label: "Search Signals", value: String(alertCenter.summary.searchSignalCount), delta: "Saved searches with more matches" },
             { label: "Ready Signals", value: String(alertCenter.summary.readyToBuyCount), delta: "Negotiating or ready-to-buy cases" }
           ].map((item) => (
@@ -257,6 +257,43 @@ export default async function AlertsPage() {
             </div>
           </Card>
         </div>
+
+        <Card title="Due Follow-up Tasks">
+          <div className="mt-5 space-y-4">
+            {alertCenter.dueTaskAlerts.length === 0 ? (
+              <div className="rounded-3xl bg-[var(--surface-muted)] p-5">
+                <p className="font-medium text-[var(--navy)]">No overdue or due tasks</p>
+                <p className="mt-2 text-sm text-[var(--foreground-muted)]">
+                  Create explicit follow-up tasks from the watchlist or pipeline to track calls, document checks, and pricing reviews.
+                </p>
+              </div>
+            ) : (
+              alertCenter.dueTaskAlerts.map((task) => (
+                <div key={task.id} className="rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-[var(--navy)]">{task.title}</p>
+                      <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                        {task.vehicle ? `${task.vehicle.make} ${task.vehicle.model}` : "Tracked vehicle"} | {formatStage(task.stage)}
+                      </p>
+                    </div>
+                    <StatusPill tone={priorityTone[task.priority]}>{task.priority} priority</StatusPill>
+                  </div>
+                  <p className="mt-3 text-sm text-[var(--foreground)]">
+                    {task.assigneeName ?? "Unassigned"} |{" "}
+                    {task.dueAt ? task.dueAt.toLocaleDateString("en-US", { dateStyle: "long" }) : "No due date"}
+                  </p>
+                  <Link
+                    href="/tasks"
+                    className="mt-4 inline-flex rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
+                  >
+                    Open tasks
+                  </Link>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
 
         <Card title="Ready Signals">
           <div className="mt-5 space-y-4">

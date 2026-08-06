@@ -36,6 +36,11 @@ enum WatchlistPriority {
   HIGH
 }
 
+enum TaskStatus {
+  OPEN
+  DONE
+}
+
 model User {
   id                   String    @id @default(cuid())
   email                String    @unique
@@ -64,6 +69,7 @@ model Company {
   profiles             DealerProfile[]
   analyses             VehicleAnalysis[]
   watchlistItems       Watchlist[]
+  watchlistTasks       WatchlistTask[]
   savedSearches        SavedSearch[]
   importRuns           ImportRun[]
   notificationPreference NotificationPreference?
@@ -177,10 +183,29 @@ model Watchlist {
   stage        WatchlistStage    @default(NEW)
   priority     WatchlistPriority @default(MEDIUM)
   nextActionAt DateTime?
+  tasks        WatchlistTask[]
   createdAt    DateTime          @default(now())
 
   @@index([companyId, vehicleId])
   @@unique([companyId, vehicleId])
+}
+
+model WatchlistTask {
+  id           String     @id @default(cuid())
+  companyId     String
+  company       Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  watchlistId   String
+  watchlist     Watchlist  @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  title         String
+  assigneeName  String?
+  dueAt         DateTime?
+  status        TaskStatus @default(OPEN)
+  completedAt   DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  @@index([companyId, status, dueAt])
+  @@index([watchlistId, createdAt])
 }
 
 model ProviderCredential {

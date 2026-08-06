@@ -30,7 +30,7 @@ export async function getNotificationPreference(companyId: string) {
 }
 
 export async function getAlertCenter(companyId: string) {
-  const [savedSearches, watchlistItems] = await Promise.all([
+  const [savedSearches, watchlistItems, dueTaskAlerts] = await Promise.all([
     getSavedSearches(companyId),
     prisma.watchlist.findMany({
       where: { companyId },
@@ -42,6 +42,27 @@ export async function getAlertCenter(companyId: string) {
         priority: true,
         stage: true,
         vehicleId: true
+      }
+    }),
+    prisma.watchlistTask.findMany({
+      where: {
+        companyId,
+        status: "OPEN",
+        dueAt: {
+          lte: new Date()
+        }
+      },
+      orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
+      take: 6,
+      include: {
+        watchlist: {
+          select: {
+            id: true,
+            priority: true,
+            stage: true,
+            vehicleId: true
+          }
+        }
       }
     })
   ]);
@@ -123,14 +144,24 @@ export async function getAlertCenter(companyId: string) {
 
   return {
     duePipelineAlerts,
+    dueTaskAlerts: dueTaskAlerts.map((task) => ({
+      assigneeName: task.assigneeName,
+      dueAt: task.dueAt,
+      id: task.id,
+      priority: task.watchlist.priority,
+      stage: task.watchlist.stage,
+      title: task.title,
+      vehicle: vehicleMap.get(task.watchlist.vehicleId) ?? null
+    })),
     readyToBuyAlerts,
     searchAlerts,
     summary: {
       actionableCount:
         duePipelineAlerts.length +
+        dueTaskAlerts.length +
         searchAlerts.filter((alert) => alert.delta > 0).length +
         readyToBuyAlerts.length,
-      dueTodayCount: duePipelineAlerts.length,
+      dueTodayCount: duePipelineAlerts.length + dueTaskAlerts.length,
       readyToBuyCount: readyToBuyAlerts.length,
       searchSignalCount: searchAlerts.filter((alert) => alert.delta > 0).length
     }
@@ -171,6 +202,15 @@ export function buildAlertDigestPreview(input: Awaited<ReturnType<typeof getAler
     for (const alert of input.duePipelineAlerts.slice(0, 3)) {
       const vehicleLabel = alert.vehicle ? `${alert.vehicle.make} ${alert.vehicle.model}` : "Tracked vehicle";
       lines.push(`- ${vehicleLabel}: ${alert.stage.toLowerCase()} | ${alert.priority.toLowerCase()} priority`);
+    }
+    lines.push("");
+  }
+
+  if (input.dueTaskAlerts.length > 0) {
+    lines.push("Due follow-up tasks:");
+    for (const task of input.dueTaskAlerts.slice(0, 3)) {
+      const vehicleLabel = task.vehicle ? `${task.vehicle.make} ${task.vehicle.model}` : "Tracked vehicle";
+      lines.push(`- ${task.title}: ${vehicleLabel} | ${task.priority.toLowerCase()} priority`);
     }
     lines.push("");
   }

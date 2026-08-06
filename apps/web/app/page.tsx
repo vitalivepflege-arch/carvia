@@ -12,6 +12,7 @@ export default async function HomePage() {
       alertSummary={metrics.alertSummary}
       analysesCount={metrics.analysesCount}
       companyName={metrics.company?.name ?? "Unknown Company"}
+      openTaskCount={metrics.openTaskCount}
       pipelineSummary={metrics.pipelineSummary}
       providerCount={metrics.providerCount}
       recentAnalyses={metrics.recentAnalyses}

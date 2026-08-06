@@ -21,7 +21,7 @@ export async function getWatchlistItems(companyId: string) {
   }
 
   const vehicleIds = [...new Set(items.map((item) => item.vehicleId))];
-  const [vehicles, analyses] = await Promise.all([
+  const [vehicles, analyses, tasks] = await Promise.all([
     prisma.vehicle.findMany({
       where: {
         id: {
@@ -58,11 +58,30 @@ export async function getWatchlistItems(companyId: string) {
         confidence: true,
         createdAt: true
       }
+    }),
+    prisma.watchlistTask.findMany({
+      where: {
+        companyId,
+        status: "OPEN",
+        watchlistId: {
+          in: items.map((item) => item.id)
+        }
+      },
+      orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        watchlistId: true,
+        title: true,
+        assigneeName: true,
+        dueAt: true,
+        createdAt: true
+      }
     })
   ]);
 
   const vehicleMap = new Map(vehicles.map((vehicle) => [vehicle.id, vehicle]));
   const latestAnalysisByVehicle = new Map<string, (typeof analyses)[number]>();
+  const tasksByWatchlist = new Map<string, Array<(typeof tasks)[number]>>();
 
   for (const analysis of analyses) {
     if (analysis.vehicleId && !latestAnalysisByVehicle.has(analysis.vehicleId)) {
@@ -70,10 +89,17 @@ export async function getWatchlistItems(companyId: string) {
     }
   }
 
+  for (const task of tasks) {
+    const existing = tasksByWatchlist.get(task.watchlistId) ?? [];
+    existing.push(task);
+    tasksByWatchlist.set(task.watchlistId, existing);
+  }
+
   return items
     .map((item) => ({
       ...item,
       analysis: latestAnalysisByVehicle.get(item.vehicleId) ?? null,
+      openTasks: tasksByWatchlist.get(item.id) ?? [],
       vehicle: vehicleMap.get(item.vehicleId) ?? null
     }))
     .filter(
@@ -94,6 +120,7 @@ export async function getWatchlistItems(companyId: string) {
             projectedMargin: item.analysis.projectedMargin ? Number(item.analysis.projectedMargin) : null
           }
         : null,
+      openTasks: item.openTasks,
       vehicle: {
         ...item.vehicle,
         priceGross: item.vehicle.priceGross ? Number(item.vehicle.priceGross) : null
@@ -102,20 +129,29 @@ export async function getWatchlistItems(companyId: string) {
 }
 
 export async function getWatchlistPipelineSummary(companyId: string) {
-  const items = await prisma.watchlist.findMany({
-    where: { companyId },
-    select: {
-      id: true,
-      nextActionAt: true,
-      priority: true,
-      stage: true
-    }
-  });
+  const [items, openTaskCount] = await Promise.all([
+    prisma.watchlist.findMany({
+      where: { companyId },
+      select: {
+        id: true,
+        nextActionAt: true,
+        priority: true,
+        stage: true
+      }
+    }),
+    prisma.watchlistTask.count({
+      where: {
+        companyId,
+        status: "OPEN"
+      }
+    })
+  ]);
 
   return {
     dueNowCount: items.filter((item) => item.nextActionAt && item.nextActionAt <= new Date()).length,
     highPriorityCount: items.filter((item) => item.priority === "HIGH").length,
     negotiatingCount: items.filter((item) => item.stage === "NEGOTIATING").length,
-    readyToBuyCount: items.filter((item) => item.stage === "READY_TO_BUY").length
+    readyToBuyCount: items.filter((item) => item.stage === "READY_TO_BUY").length,
+    openTaskCount
   };
 }

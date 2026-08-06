@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Card, StatusPill } from "@carvia/ui";
-import { removeWatchlistItem, updateWatchlistNote, updateWatchlistWorkflow } from "./actions";
+import { completeWatchlistTask, createWatchlistTask } from "../tasks/actions";
 import { requireOnboardedSession } from "../../lib/auth";
 import { getWatchlistItems, getWatchlistPipelineSummary } from "../../lib/watchlist";
+import { removeWatchlistItem, updateWatchlistNote, updateWatchlistWorkflow } from "./actions";
 
 const priorityTone = {
   HIGH: "danger",
@@ -58,7 +59,7 @@ export default async function WatchlistPage() {
             { label: "Due Now", value: String(pipelineSummary.dueNowCount), delta: `Actions due on or before ${dueDateLabel}` },
             { label: "High Priority", value: String(pipelineSummary.highPriorityCount), delta: "Urgent opportunities" },
             { label: "Negotiating", value: String(pipelineSummary.negotiatingCount), delta: "Deals in conversation" },
-            { label: "Ready To Buy", value: String(pipelineSummary.readyToBuyCount), delta: "Near execution decisions" }
+            { label: "Open Tasks", value: String(pipelineSummary.openTaskCount), delta: "Follow-up work in flight" }
           ].map((metric) => (
             <Card key={metric.label} title={metric.label}>
               <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
@@ -117,6 +118,38 @@ export default async function WatchlistPage() {
                           ? item.nextActionAt.toLocaleDateString("en-US", { dateStyle: "long" })
                           : "Not scheduled yet"}
                       </p>
+                    </div>
+
+                    <div className="rounded-3xl bg-[var(--surface-muted)] p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Open tasks</p>
+                        <StatusPill tone={item.openTasks.length > 0 ? "warning" : "info"}>{item.openTasks.length}</StatusPill>
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        {item.openTasks.length === 0 ? (
+                          <p className="text-sm text-[var(--foreground-muted)]">No follow-up tasks yet.</p>
+                        ) : (
+                          item.openTasks.slice(0, 3).map((task) => (
+                            <div key={task.id} className="rounded-2xl border border-[var(--border)] bg-white p-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-medium text-[var(--navy)]">{task.title}</p>
+                                  <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">
+                                    {task.assigneeName ?? "Unassigned"} |{" "}
+                                    {task.dueAt ? task.dueAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "No due date"}
+                                  </p>
+                                </div>
+                                <form action={completeWatchlistTask}>
+                                  <input type="hidden" name="taskId" value={task.id} />
+                                  <button type="submit" className="text-xs font-semibold text-[var(--navy)] underline-offset-4 hover:underline">
+                                    Done
+                                  </button>
+                                </form>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
 
                     {item.analysis ? (
@@ -200,6 +233,37 @@ export default async function WatchlistPage() {
                       >
                         Save note
                       </button>
+                    </form>
+
+                    <form action={createWatchlistTask} className="rounded-3xl bg-[var(--surface-muted)] p-4">
+                      <input type="hidden" name="watchlistId" value={item.id} />
+                      <p className="text-sm font-medium text-[var(--navy)]">Add follow-up task</p>
+                      <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                        Turn this opportunity into a concrete callback, document check, or pricing task.
+                      </p>
+                      <div className="mt-4 grid gap-4">
+                        <input
+                          name="title"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          placeholder="Call seller and verify service history"
+                        />
+                        <input
+                          name="assigneeName"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          placeholder="Owner or teammate"
+                        />
+                        <input
+                          name="dueAt"
+                          type="date"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                        />
+                        <button
+                          type="submit"
+                          className="rounded-full bg-[var(--navy)] px-4 py-2 text-sm font-semibold text-white"
+                        >
+                          Save task
+                        </button>
+                      </div>
                     </form>
 
                     <form action={removeWatchlistItem}>

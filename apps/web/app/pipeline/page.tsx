@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Card, StatusPill } from "@carvia/ui";
+import { completeWatchlistTask, createWatchlistTask } from "../tasks/actions";
 import { requireOnboardedSession } from "../../lib/auth";
 import { getWatchlistItems, getWatchlistPipelineSummary, watchlistStageLabels, watchlistStageOrder } from "../../lib/watchlist";
 import { updateWatchlistWorkflow } from "../watchlist/actions";
@@ -66,7 +67,7 @@ export default async function PipelinePage() {
             { label: "Due Now", value: String(pipelineSummary.dueNowCount), delta: `Actions due on or before ${dueDateLabel}` },
             { label: "High Priority", value: String(pipelineSummary.highPriorityCount), delta: "Immediate acquisition focus" },
             { label: "Negotiating", value: String(pipelineSummary.negotiatingCount), delta: "Active seller conversations" },
-            { label: "Ready To Buy", value: String(pipelineSummary.readyToBuyCount), delta: "Closest to execution" }
+            { label: "Open Tasks", value: String(pipelineSummary.openTaskCount), delta: "Team follow-ups in motion" }
           ].map((metric) => (
             <Card key={metric.label} title={metric.label}>
               <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
@@ -115,7 +116,7 @@ export default async function PipelinePage() {
                               {item.vehicle.make} {item.vehicle.model}
                             </p>
                             <p className="mt-1 text-sm text-[var(--foreground-muted)]">
-                              {item.vehicle.firstRegistration?.toISOString().slice(0, 7) ?? "Unknown year"} ·{" "}
+                              {item.vehicle.firstRegistration?.toISOString().slice(0, 7) ?? "Unknown year"} |{" "}
                               {item.vehicle.mileageKm ? `${item.vehicle.mileageKm.toLocaleString("en-US")} km` : "Mileage open"}
                             </p>
                           </div>
@@ -146,6 +147,38 @@ export default async function PipelinePage() {
                         <div className="mt-4 rounded-2xl bg-[var(--surface-muted)] p-3">
                           <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">Next action</p>
                           <p className="mt-2 text-sm font-medium text-[var(--navy)]">{formatDate(item.nextActionAt)}</p>
+                        </div>
+
+                        <div className="mt-4 rounded-2xl bg-[var(--surface-muted)] p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">Open tasks</p>
+                            <StatusPill tone={item.openTasks.length > 0 ? "warning" : "info"}>{item.openTasks.length}</StatusPill>
+                          </div>
+                          <div className="mt-3 space-y-3">
+                            {item.openTasks.length === 0 ? (
+                              <p className="text-sm text-[var(--foreground-muted)]">No task attached yet.</p>
+                            ) : (
+                              item.openTasks.slice(0, 2).map((task) => (
+                                <div key={task.id} className="rounded-2xl border border-[var(--border)] bg-white p-3">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                      <p className="text-sm font-medium text-[var(--navy)]">{task.title}</p>
+                                      <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">
+                                        {task.assigneeName ?? "Unassigned"} |{" "}
+                                        {task.dueAt ? task.dueAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "No due date"}
+                                      </p>
+                                    </div>
+                                    <form action={completeWatchlistTask}>
+                                      <input type="hidden" name="taskId" value={task.id} />
+                                      <button type="submit" className="text-xs font-semibold text-[var(--navy)] underline-offset-4 hover:underline">
+                                        Done
+                                      </button>
+                                    </form>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
                         </div>
 
                         {item.note ? (
@@ -194,6 +227,34 @@ export default async function PipelinePage() {
                               </Link>
                             )}
                           </div>
+                        </form>
+
+                        <form action={createWatchlistTask} className="mt-4 space-y-3">
+                          <input type="hidden" name="watchlistId" value={item.id} />
+                          <label className="block">
+                            <span className="text-xs uppercase tracking-[0.18em] text-[var(--foreground-muted)]">Add task</span>
+                            <input
+                              name="title"
+                              className="mt-2 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                              placeholder="Prepare negotiation call"
+                            />
+                          </label>
+                          <input
+                            name="assigneeName"
+                            className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                            placeholder="Owner or teammate"
+                          />
+                          <input
+                            name="dueAt"
+                            type="date"
+                            className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                          <button
+                            type="submit"
+                            className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
+                          >
+                            Save task
+                          </button>
                         </form>
                       </article>
                     ))

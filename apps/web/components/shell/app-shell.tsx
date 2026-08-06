@@ -8,6 +8,7 @@ export function AppShell({
   alertSummary,
   analysesCount,
   companyName,
+  openTaskCount,
   pipelineSummary,
   providerCount,
   recentAnalyses,
@@ -22,10 +23,12 @@ export function AppShell({
   };
   analysesCount: number;
   companyName: string;
+  openTaskCount: number;
   pipelineSummary: {
     dueNowCount: number;
     highPriorityCount: number;
     negotiatingCount: number;
+    openTaskCount: number;
     readyToBuyCount: number;
   };
   providerCount: number;
@@ -92,7 +95,7 @@ export function AppShell({
               { label: "Company", value: companyName, delta: "Current tenant context" },
               { label: "Analyses", value: String(analysesCount), delta: "Scoped to your company" },
               { label: "Watchlist", value: String(watchlistCount), delta: "Saved opportunities" },
-              { label: "Providers", value: String(providerCount), delta: "Connected or staged adapters" }
+              { label: "Open Tasks", value: String(openTaskCount), delta: "Follow-up queue" }
             ].map((kpi) => (
               <Card key={kpi.label} title={kpi.label}>
                 <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{kpi.value}</p>
@@ -118,9 +121,9 @@ export function AppShell({
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {[
               { label: "Actionable Alerts", value: String(alertSummary.actionableCount), delta: "Signals needing review" },
-              { label: "Due Today", value: String(alertSummary.dueTodayCount), delta: "Pipeline follow-ups" },
+              { label: "Due Today", value: String(alertSummary.dueTodayCount), delta: "Pipeline and task follow-ups" },
               { label: "Search Signals", value: String(alertSummary.searchSignalCount), delta: "Saved search changes" },
-              { label: "Ready Signals", value: String(alertSummary.readyToBuyCount), delta: "Negotiating or buy-ready" }
+              { label: "Providers", value: String(providerCount), delta: "Connected or staged adapters" }
             ].map((kpi) => (
               <Card key={kpi.label} title={kpi.label}>
                 <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{kpi.value}</p>
