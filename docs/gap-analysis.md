@@ -17,13 +17,13 @@ This repository now covers the core MVP foundation and first interactive sourcin
 - saved searches with alert-ready flags
 - provider readiness overview
 - tenant-managed provider credential states
+- watchlist-based deal pipeline states and priorities
 
 ## Still Missing
 
 - import pipeline and file validation
 - deeper comparables, pricing, demand, liquidity, risk, and confidence implementations
 - automated search alerts
-- deal pipeline workflow states
 - real charts and richer analysis visualization
 - live provider adapters with official credentials
 

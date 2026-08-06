@@ -11,6 +11,7 @@ export default async function HomePage() {
       activeSection="Dashboard"
       analysesCount={metrics.analysesCount}
       companyName={metrics.company?.name ?? "Unknown Company"}
+      pipelineSummary={metrics.pipelineSummary}
       providerCount={metrics.providerCount}
       recentAnalyses={metrics.recentAnalyses}
       watchlistCount={metrics.watchlistCount}

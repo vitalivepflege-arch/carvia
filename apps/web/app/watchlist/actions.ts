@@ -10,8 +10,15 @@ const addWatchlistSchema = z.object({
   vehicleId: z.string().min(1)
 });
 
-const updateWatchlistSchema = z.object({
+const updateWatchlistNoteSchema = z.object({
   note: z.string().trim().max(500).optional(),
+  watchlistId: z.string().min(1)
+});
+
+const updateWatchlistWorkflowSchema = z.object({
+  nextActionAt: z.string().optional(),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH"]),
+  stage: z.enum(["NEW", "REVIEWING", "NEGOTIATING", "READY_TO_BUY", "PASSED"]),
   watchlistId: z.string().min(1)
 });
 
@@ -53,6 +60,8 @@ export async function addVehicleToWatchlist(formData: FormData) {
       data: {
         companyId: session.user.companyId!,
         note: parsed.note,
+        priority: "MEDIUM",
+        stage: "NEW",
         vehicleId: parsed.vehicleId
       }
     });
@@ -64,7 +73,7 @@ export async function addVehicleToWatchlist(formData: FormData) {
 
 export async function updateWatchlistNote(formData: FormData) {
   const session = await requireOnboardedSession();
-  const parsed = updateWatchlistSchema.parse({
+  const parsed = updateWatchlistNoteSchema.parse({
     note: readOptionalString(formData, "note"),
     watchlistId: formData.get("watchlistId")
   });
@@ -79,6 +88,31 @@ export async function updateWatchlistNote(formData: FormData) {
     }
   });
 
+  revalidatePath("/watchlist");
+}
+
+export async function updateWatchlistWorkflow(formData: FormData) {
+  const session = await requireOnboardedSession();
+  const parsed = updateWatchlistWorkflowSchema.parse({
+    nextActionAt: readOptionalString(formData, "nextActionAt"),
+    priority: formData.get("priority"),
+    stage: formData.get("stage"),
+    watchlistId: formData.get("watchlistId")
+  });
+
+  await prisma.watchlist.updateMany({
+    where: {
+      id: parsed.watchlistId,
+      companyId: session.user.companyId!
+    },
+    data: {
+      nextActionAt: parsed.nextActionAt ? new Date(`${parsed.nextActionAt}T00:00:00.000Z`) : null,
+      priority: parsed.priority,
+      stage: parsed.stage
+    }
+  });
+
+  revalidatePath("/");
   revalidatePath("/watchlist");
 }
 

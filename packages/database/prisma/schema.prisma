@@ -22,6 +22,20 @@ enum ProviderStatus {
   ERROR
 }
 
+enum WatchlistStage {
+  NEW
+  REVIEWING
+  NEGOTIATING
+  READY_TO_BUY
+  PASSED
+}
+
+enum WatchlistPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 model User {
   id                   String    @id @default(cuid())
   email                String    @unique
@@ -150,12 +164,15 @@ model VehicleAnalysis {
 }
 
 model Watchlist {
-  id         String   @id @default(cuid())
-  companyId  String
-  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  vehicleId  String
-  note       String?
-  createdAt  DateTime @default(now())
+  id           String            @id @default(cuid())
+  companyId    String
+  company      Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  vehicleId    String
+  note         String?
+  stage        WatchlistStage    @default(NEW)
+  priority     WatchlistPriority @default(MEDIUM)
+  nextActionAt DateTime?
+  createdAt    DateTime          @default(now())
 
   @@index([companyId, vehicleId])
   @@unique([companyId, vehicleId])

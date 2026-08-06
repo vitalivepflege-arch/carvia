@@ -7,6 +7,7 @@ export function AppShell({
   activeSection = "Dashboard",
   analysesCount,
   companyName,
+  pipelineSummary,
   providerCount,
   recentAnalyses,
   watchlistCount
@@ -14,6 +15,12 @@ export function AppShell({
   activeSection?: string;
   analysesCount: number;
   companyName: string;
+  pipelineSummary: {
+    dueNowCount: number;
+    highPriorityCount: number;
+    negotiatingCount: number;
+    readyToBuyCount: number;
+  };
   providerCount: number;
   recentAnalyses: Array<{
     confidence: number | null;
@@ -87,6 +94,20 @@ export function AppShell({
             ))}
           </div>
 
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {[
+              { label: "Due Now", value: String(pipelineSummary.dueNowCount), delta: "Next actions due" },
+              { label: "High Priority", value: String(pipelineSummary.highPriorityCount), delta: "Top acquisition focus" },
+              { label: "Negotiating", value: String(pipelineSummary.negotiatingCount), delta: "Live buy conversations" },
+              { label: "Ready To Buy", value: String(pipelineSummary.readyToBuyCount), delta: "Near execution decisions" }
+            ].map((kpi) => (
+              <Card key={kpi.label} title={kpi.label}>
+                <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{kpi.value}</p>
+                <p className="mt-2 text-sm text-[var(--foreground-muted)]">{kpi.delta}</p>
+              </Card>
+            ))}
+          </div>
+
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.9fr)]">
             <Card title="Current MVP Footing">
               <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -102,10 +123,10 @@ export function AppShell({
                 <div className="rounded-3xl bg-[var(--surface-muted)] p-5">
                   <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Next implementation focus</p>
                   <ul className="mt-3 space-y-2 text-sm text-[var(--foreground)]">
-                    <li>Saved searches and sourcing alerts</li>
-                    <li>Provider credential management</li>
                     <li>Import and normalization pipeline</li>
                     <li>Deeper scoring and risk explainability</li>
+                    <li>Alert delivery and recurring sourcing reviews</li>
+                    <li>CSV intake with normalization safety rails</li>
                   </ul>
                 </div>
               </div>

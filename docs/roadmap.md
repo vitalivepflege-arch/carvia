@@ -37,6 +37,8 @@
 
 ## Phase 5
 
+- import pipeline
+- normalization safety rails
 - deeper comparables engine
 - market position visuals
 - risk explainability
@@ -44,6 +46,5 @@
 
 ## Phase 6
 
-- deal pipeline
-- acquisition workflow states
 - alert delivery and notification policy
+- recurring review cadences

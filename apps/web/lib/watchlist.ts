@@ -3,7 +3,7 @@ import { prisma } from "@carvia/database";
 export async function getWatchlistItems(companyId: string) {
   const items = await prisma.watchlist.findMany({
     where: { companyId },
-    orderBy: { createdAt: "desc" }
+    orderBy: [{ priority: "desc" }, { createdAt: "desc" }]
   });
 
   if (items.length === 0) {
@@ -89,4 +89,23 @@ export async function getWatchlistItems(companyId: string) {
         priceGross: item.vehicle.priceGross ? Number(item.vehicle.priceGross) : null
       }
     }));
+}
+
+export async function getWatchlistPipelineSummary(companyId: string) {
+  const items = await prisma.watchlist.findMany({
+    where: { companyId },
+    select: {
+      id: true,
+      nextActionAt: true,
+      priority: true,
+      stage: true
+    }
+  });
+
+  return {
+    dueNowCount: items.filter((item) => item.nextActionAt && item.nextActionAt <= new Date()).length,
+    highPriorityCount: items.filter((item) => item.priority === "HIGH").length,
+    negotiatingCount: items.filter((item) => item.stage === "NEGOTIATING").length,
+    readyToBuyCount: items.filter((item) => item.stage === "READY_TO_BUY").length
+  };
 }
