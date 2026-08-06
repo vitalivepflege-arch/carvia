@@ -153,6 +153,12 @@ export default async function AnalysisDetailPage({
           <div className="flex gap-3">
             <StatusPill tone="success">DealerScore {analysis.dealerScore ?? "-"}</StatusPill>
             <Link
+              href="/analyses"
+              className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
+            >
+              All analyses
+            </Link>
+            <Link
               href="/deal-check"
               className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
             >

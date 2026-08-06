@@ -1,5 +1,6 @@
 export const shellSections = [
   { label: "Dashboard", value: "Dashboard", href: "/" },
+  { label: "Analyses", value: "Deal Reviews", href: "/analyses" },
   { label: "Alerts", value: "Daily Signals", href: "/alerts" },
   { label: "Deal Check", value: "Intelligence", href: "/deal-check" },
   { label: "Market Search", value: "Opportunity Scan", href: "/market-search" },
