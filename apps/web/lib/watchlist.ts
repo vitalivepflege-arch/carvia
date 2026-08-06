@@ -37,6 +37,16 @@ export const watchlistRetailStatusLabels = {
   SOLD: "Sold"
 } as const;
 
+export const watchlistSalesStatusLabels = {
+  LEAD_NEW: "Lead new",
+  LOST: "Lost",
+  NEGOTIATING: "Negotiating",
+  NONE: "No sales flow",
+  RESERVATION_PENDING: "Reservation pending",
+  TEST_DRIVE_SCHEDULED: "Test drive scheduled",
+  WON: "Won"
+} as const;
+
 export async function getWatchlistItems(companyId: string) {
   const items = await prisma.watchlist.findMany({
     where: { companyId },
@@ -188,15 +198,21 @@ export async function getWatchlistItems(companyId: string) {
       handoffCompletedAt: item.handoffCompletedAt,
       latestOfferPrice: item.latestOfferPrice ? Number(item.latestOfferPrice) : null,
       listingPublishedAt: item.listingPublishedAt,
+      leadCount: item.leadCount,
       mediaCompletedAt: item.mediaCompletedAt,
       paperworkCompletedAt: item.paperworkCompletedAt,
       paymentCompletedAt: item.paymentCompletedAt,
       recentActivities: activitiesByWatchlist.get(item.id) ?? [],
       reconditioningCompletedAt: item.reconditioningCompletedAt,
+      reservationPlacedAt: item.reservationPlacedAt,
       retailAskingPrice: item.retailAskingPrice ? Number(item.retailAskingPrice) : null,
       retailTargetDate: item.retailTargetDate,
       retailUpdatedAt: item.retailUpdatedAt,
+      salesTargetDate: item.salesTargetDate,
+      salesUpdatedAt: item.salesUpdatedAt,
+      soldRetailPrice: item.soldRetailPrice ? Number(item.soldRetailPrice) : null,
       soldAt: item.soldAt,
+      testDriveScheduledAt: item.testDriveScheduledAt,
       targetBuyPrice: item.targetBuyPrice ? Number(item.targetBuyPrice) : null,
       openTasks: tasksByWatchlist.get(item.id) ?? [],
       vehicle: vehicleMap.get(item.vehicleId) ?? null
@@ -240,6 +256,7 @@ export async function getWatchlistPipelineSummary(companyId: string) {
         offerStatus: true,
         priority: true,
         retailStatus: true,
+        salesStatus: true,
         stage: true
       }
     }),
@@ -268,6 +285,13 @@ export async function getWatchlistPipelineSummary(companyId: string) {
         item.retailStatus === "MEDIA_PENDING" ||
         item.retailStatus === "LISTING_READY" ||
         item.retailStatus === "LIVE"
+    ).length,
+    activeSalesCount: items.filter(
+      (item) =>
+        item.salesStatus === "LEAD_NEW" ||
+        item.salesStatus === "RESERVATION_PENDING" ||
+        item.salesStatus === "TEST_DRIVE_SCHEDULED" ||
+        item.salesStatus === "NEGOTIATING"
     ).length,
     readyToBuyCount: items.filter((item) => item.stage === "READY_TO_BUY").length,
     openTaskCount

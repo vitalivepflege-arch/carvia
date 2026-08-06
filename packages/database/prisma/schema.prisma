@@ -69,6 +69,16 @@ enum WatchlistRetailStatus {
   SOLD
 }
 
+enum WatchlistSalesStatus {
+  NONE
+  LEAD_NEW
+  RESERVATION_PENDING
+  TEST_DRIVE_SCHEDULED
+  NEGOTIATING
+  WON
+  LOST
+}
+
 enum TaskStatus {
   OPEN
   DONE
@@ -251,6 +261,13 @@ model Watchlist {
   listingPublishedAt DateTime?
   soldAt DateTime?
   retailUpdatedAt DateTime?
+  salesStatus WatchlistSalesStatus @default(NONE)
+  leadCount Int @default(0)
+  reservationPlacedAt DateTime?
+  testDriveScheduledAt DateTime?
+  salesTargetDate DateTime?
+  soldRetailPrice Decimal? @db.Decimal(12, 2)
+  salesUpdatedAt DateTime?
   nextActionAt DateTime?
   activities   WatchlistActivity[]
   contacts     WatchlistContact[]

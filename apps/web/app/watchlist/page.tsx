@@ -11,6 +11,7 @@ import {
   getWatchlistPipelineSummary,
   watchlistClosingStatusLabels,
   watchlistOfferStatusLabels,
+  watchlistSalesStatusLabels,
   watchlistRetailStatusLabels
 } from "../../lib/watchlist";
 import { removeWatchlistItem, updateWatchlistNote, updateWatchlistWorkflow } from "./actions";
@@ -69,6 +70,16 @@ const retailTone = {
   NONE: "info",
   RECONDITIONING: "warning",
   SOLD: "success"
+} as const;
+
+const salesTone = {
+  LEAD_NEW: "info",
+  LOST: "danger",
+  NEGOTIATING: "warning",
+  NONE: "info",
+  RESERVATION_PENDING: "warning",
+  TEST_DRIVE_SCHEDULED: "info",
+  WON: "success"
 } as const;
 
 function formatStage(stage: string) {
@@ -142,6 +153,7 @@ export default async function WatchlistPage() {
                       <StatusPill tone={offerTone[item.offerStatus]}>{watchlistOfferStatusLabels[item.offerStatus]}</StatusPill>
                       <StatusPill tone={closingTone[item.closingStatus]}>{watchlistClosingStatusLabels[item.closingStatus]}</StatusPill>
                       <StatusPill tone={retailTone[item.retailStatus]}>{watchlistRetailStatusLabels[item.retailStatus]}</StatusPill>
+                      <StatusPill tone={salesTone[item.salesStatus]}>{watchlistSalesStatusLabels[item.salesStatus]}</StatusPill>
                       {item.analysis ? (
                         <>
                           <StatusPill tone="success">Score {item.analysis.dealerScore ?? "-"}</StatusPill>
@@ -163,7 +175,10 @@ export default async function WatchlistPage() {
                         ["Counter", item.counterOfferPrice ? `EUR ${item.counterOfferPrice.toLocaleString("en-US")}` : "-"],
                         ["Closing Target", item.closingTargetDate ? item.closingTargetDate.toLocaleDateString("en-US", { dateStyle: "medium" }) : "-"],
                         ["Retail Ask", item.retailAskingPrice ? `EUR ${item.retailAskingPrice.toLocaleString("en-US")}` : "-"],
-                        ["Retail Target", item.retailTargetDate ? item.retailTargetDate.toLocaleDateString("en-US", { dateStyle: "medium" }) : "-"]
+                        ["Retail Target", item.retailTargetDate ? item.retailTargetDate.toLocaleDateString("en-US", { dateStyle: "medium" }) : "-"],
+                        ["Lead Count", String(item.leadCount ?? 0)],
+                        ["Sales Target", item.salesTargetDate ? item.salesTargetDate.toLocaleDateString("en-US", { dateStyle: "medium" }) : "-"],
+                        ["Sold Price", item.soldRetailPrice ? `EUR ${item.soldRetailPrice.toLocaleString("en-US")}` : "-"]
                       ].map(([label, value]) => (
                         <div key={label} className="rounded-3xl bg-[var(--surface-muted)] p-4">
                           <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">{label}</p>
@@ -202,6 +217,21 @@ export default async function WatchlistPage() {
                           ["Recon", item.reconditioningCompletedAt ? item.reconditioningCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
                           ["Media", item.mediaCompletedAt ? item.mediaCompletedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
                           ["Listing", item.listingPublishedAt ? item.listingPublishedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
+                          ["Sold", item.soldAt ? item.soldAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"]
+                        ].map(([label, value]) => (
+                          <div key={label} className="rounded-2xl border border-[var(--border)] bg-white p-3">
+                            <p className="text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">{label}</p>
+                            <p className="mt-2 text-sm text-[var(--navy)]">{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl bg-[var(--surface-muted)] p-4">
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        {[
+                          ["Reservation", item.reservationPlacedAt ? item.reservationPlacedAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
+                          ["Test Drive", item.testDriveScheduledAt ? item.testDriveScheduledAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"],
                           ["Sold", item.soldAt ? item.soldAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "Open"]
                         ].map(([label, value]) => (
                           <div key={label} className="rounded-2xl border border-[var(--border)] bg-white p-3">
@@ -419,6 +449,23 @@ export default async function WatchlistPage() {
                         </label>
 
                         <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Sales status</span>
+                          <select
+                            name="salesStatus"
+                            defaultValue={item.salesStatus}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          >
+                            <option value="NONE">No sales flow</option>
+                            <option value="LEAD_NEW">Lead new</option>
+                            <option value="RESERVATION_PENDING">Reservation pending</option>
+                            <option value="TEST_DRIVE_SCHEDULED">Test drive scheduled</option>
+                            <option value="NEGOTIATING">Negotiating</option>
+                            <option value="WON">Won</option>
+                            <option value="LOST">Lost</option>
+                          </select>
+                        </label>
+
+                        <label className="block">
                           <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Target buy price</span>
                           <input
                             name="targetBuyPrice"
@@ -513,6 +560,27 @@ export default async function WatchlistPage() {
                         </label>
 
                         <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Lead count</span>
+                          <input
+                            name="leadCount"
+                            type="number"
+                            min={0}
+                            defaultValue={item.leadCount ?? 0}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Sales target date</span>
+                          <input
+                            name="salesTargetDate"
+                            type="date"
+                            defaultValue={item.salesTargetDate ? item.salesTargetDate.toISOString().slice(0, 10) : ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
                           <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Reconditioning completed</span>
                           <input
                             name="reconditioningCompletedAt"
@@ -543,11 +611,42 @@ export default async function WatchlistPage() {
                         </label>
 
                         <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Reservation placed</span>
+                          <input
+                            name="reservationPlacedAt"
+                            type="date"
+                            defaultValue={item.reservationPlacedAt ? item.reservationPlacedAt.toISOString().slice(0, 10) : ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Test drive scheduled</span>
+                          <input
+                            name="testDriveScheduledAt"
+                            type="date"
+                            defaultValue={item.testDriveScheduledAt ? item.testDriveScheduledAt.toISOString().slice(0, 10) : ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
                           <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Sold at</span>
                           <input
                             name="soldAt"
                             type="date"
                             defaultValue={item.soldAt ? item.soldAt.toISOString().slice(0, 10) : ""}
+                            className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          />
+                        </label>
+
+                        <label className="block">
+                          <span className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Sold retail price</span>
+                          <input
+                            name="soldRetailPrice"
+                            type="number"
+                            step="0.01"
+                            defaultValue={item.soldRetailPrice ?? ""}
                             className="mt-3 w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
                           />
                         </label>

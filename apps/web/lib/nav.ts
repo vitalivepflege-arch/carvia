@@ -12,6 +12,7 @@ export const shellSections = [
   { label: "Offers", value: "Negotiations", href: "/offers" },
   { label: "Closings", value: "Purchase Flow", href: "/closings" },
   { label: "Retail", value: "Exit Flow", href: "/retail" },
+  { label: "Sales", value: "Lead Execution", href: "/sales" },
   { label: "Tasks", value: "Follow-ups", href: "/tasks" },
   { label: "Watchlist", value: "Tracked Vehicles", href: "/watchlist" },
   { label: "Imports", value: "CSV Intake", href: "/imports" },
