@@ -5,6 +5,7 @@ import { SignOutButton } from "./sign-out-button";
 
 export function AppShell({
   activeSection = "Dashboard",
+  alertSummary,
   analysesCount,
   companyName,
   pipelineSummary,
@@ -13,6 +14,12 @@ export function AppShell({
   watchlistCount
 }: {
   activeSection?: string;
+  alertSummary: {
+    actionableCount: number;
+    dueTodayCount: number;
+    readyToBuyCount: number;
+    searchSignalCount: number;
+  };
   analysesCount: number;
   companyName: string;
   pipelineSummary: {
@@ -108,6 +115,20 @@ export function AppShell({
             ))}
           </div>
 
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {[
+              { label: "Actionable Alerts", value: String(alertSummary.actionableCount), delta: "Signals needing review" },
+              { label: "Due Today", value: String(alertSummary.dueTodayCount), delta: "Pipeline follow-ups" },
+              { label: "Search Signals", value: String(alertSummary.searchSignalCount), delta: "Saved search changes" },
+              { label: "Ready Signals", value: String(alertSummary.readyToBuyCount), delta: "Negotiating or buy-ready" }
+            ].map((kpi) => (
+              <Card key={kpi.label} title={kpi.label}>
+                <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{kpi.value}</p>
+                <p className="mt-2 text-sm text-[var(--foreground-muted)]">{kpi.delta}</p>
+              </Card>
+            ))}
+          </div>
+
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.9fr)]">
             <Card title="Current MVP Footing">
               <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -123,10 +144,10 @@ export function AppShell({
                 <div className="rounded-3xl bg-[var(--surface-muted)] p-5">
                   <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Next implementation focus</p>
                   <ul className="mt-3 space-y-2 text-sm text-[var(--foreground)]">
-                    <li>Import and normalization pipeline</li>
-                    <li>Deeper scoring and risk explainability</li>
-                    <li>Alert delivery and recurring sourcing reviews</li>
-                    <li>CSV intake with normalization safety rails</li>
+                    <li>Advanced normalization safety rails</li>
+                    <li>Richer analysis charts and visual explainability</li>
+                    <li>Live provider integrations and sync orchestration</li>
+                    <li>Notification delivery beyond in-app alerts</li>
                   </ul>
                 </div>
               </div>

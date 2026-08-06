@@ -1,8 +1,9 @@
 import { prisma } from "@carvia/database";
+import { getAlertCenter } from "./alerts";
 import { getWatchlistPipelineSummary } from "./watchlist";
 
 export async function getDashboardMetrics(companyId: string) {
-  const [watchlistCount, analysesCount, providerCount, company, recentAnalyses, pipelineSummary] = await Promise.all([
+  const [watchlistCount, analysesCount, providerCount, company, recentAnalyses, pipelineSummary, alertCenter] = await Promise.all([
     prisma.watchlist.count({ where: { companyId } }),
     prisma.vehicleAnalysis.count({ where: { companyId } }),
     prisma.providerCredential.count({ where: { companyId } }),
@@ -29,7 +30,8 @@ export async function getDashboardMetrics(companyId: string) {
         createdAt: true
       }
     }),
-    getWatchlistPipelineSummary(companyId)
+    getWatchlistPipelineSummary(companyId),
+    getAlertCenter(companyId)
   ]);
 
   const vehicles = recentAnalyses.length
@@ -57,6 +59,7 @@ export async function getDashboardMetrics(companyId: string) {
   return {
     watchlistCount,
     pipelineSummary,
+    alertSummary: alertCenter.summary,
     analysesCount,
     providerCount,
     company,
