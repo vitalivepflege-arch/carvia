@@ -6,6 +6,10 @@ const mockVehicleProvider = new MockVehicleProvider();
 
 type AlertSeverity = "info" | "success" | "warning";
 
+function getCurrentDateLabel() {
+  return new Intl.DateTimeFormat("en-US", { dateStyle: "full" }).format(new Date());
+}
+
 export async function getNotificationPreference(companyId: string) {
   const preference = await prisma.notificationPreference.findUnique({
     where: { companyId }
@@ -133,9 +137,17 @@ export async function getAlertCenter(companyId: string) {
   };
 }
 
+export async function getNotificationDigestRuns(companyId: string) {
+  return prisma.notificationDigestRun.findMany({
+    where: { companyId },
+    orderBy: { sentAt: "desc" },
+    take: 8
+  });
+}
+
 export function buildAlertDigestPreview(input: Awaited<ReturnType<typeof getAlertCenter>>) {
   const lines = [
-    "Carvia Daily Digest - Thursday, August 6, 2026",
+    `Carvia Daily Digest - ${getCurrentDateLabel()}`,
     "",
     `Actionable alerts: ${input.summary.actionableCount}`,
     `Due today: ${input.summary.dueTodayCount}`,

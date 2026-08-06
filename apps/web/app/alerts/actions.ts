@@ -4,6 +4,7 @@ import { prisma } from "@carvia/database";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireOnboardedSession } from "../../lib/auth";
+import { buildAlertDigestPreview, getAlertCenter, getNotificationPreference } from "../../lib/alerts";
 
 const notificationPreferenceSchema = z.object({
   deliveryChannel: z.enum(["IN_APP", "EMAIL_READY"]),
@@ -40,6 +41,30 @@ export async function saveNotificationPreference(formData: FormData) {
       digestEnabled: parsed.digestEnabled,
       recipientEmail: parsed.recipientEmail || null,
       sendHourLocal: parsed.sendHourLocal
+    }
+  });
+
+  revalidatePath("/alerts");
+}
+
+export async function sendTestDigest() {
+  const session = await requireOnboardedSession();
+  const companyId = session.user.companyId!;
+  const [alertCenter, preference] = await Promise.all([
+    getAlertCenter(companyId),
+    getNotificationPreference(companyId)
+  ]);
+
+  const preview = buildAlertDigestPreview(alertCenter);
+
+  await prisma.notificationDigestRun.create({
+    data: {
+      actionableCount: alertCenter.summary.actionableCount,
+      companyId,
+      deliveryChannel: preference.deliveryChannel,
+      preview,
+      recipientEmail: preference.recipientEmail,
+      status: preference.digestEnabled ? "SENT" : "SKIPPED_DISABLED"
     }
   });
 

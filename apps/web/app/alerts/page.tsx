@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { Card, StatusPill } from "@carvia/ui";
-import { buildAlertDigestPreview, getAlertCenter, getNotificationPreference } from "../../lib/alerts";
+import {
+  buildAlertDigestPreview,
+  getAlertCenter,
+  getNotificationDigestRuns,
+  getNotificationPreference
+} from "../../lib/alerts";
 import { requireOnboardedSession } from "../../lib/auth";
-import { saveNotificationPreference } from "./actions";
+import { saveNotificationPreference, sendTestDigest } from "./actions";
 
 const severityTone = {
   info: "info",
@@ -26,9 +31,11 @@ function formatStage(stage: string) {
 
 export default async function AlertsPage() {
   const session = await requireOnboardedSession();
-  const [alertCenter, notificationPreference] = await Promise.all([
+  const todayLabel = new Intl.DateTimeFormat("en-US", { dateStyle: "full" }).format(new Date());
+  const [alertCenter, notificationPreference, digestRuns] = await Promise.all([
     getAlertCenter(session.user.companyId!),
-    getNotificationPreference(session.user.companyId!)
+    getNotificationPreference(session.user.companyId!),
+    getNotificationDigestRuns(session.user.companyId!)
   ]);
   const digestPreview = buildAlertDigestPreview(alertCenter);
 
@@ -39,14 +46,14 @@ export default async function AlertsPage() {
           <p className="text-xs uppercase tracking-[0.28em] text-[var(--foreground-muted)]">Alerts</p>
           <h1 className="mt-2 text-4xl font-semibold text-[var(--navy)]">Daily review signals</h1>
           <p className="mt-2 max-w-3xl text-sm text-[var(--foreground-muted)]">
-            In-app alerts combine due pipeline actions, saved search changes, and buy-ready opportunities so the team can review Thursday, August 6, 2026 from one place.
+            In-app alerts combine due pipeline actions, saved search changes, and buy-ready opportunities so the team can review {todayLabel} from one place.
           </p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
             { label: "Actionable", value: String(alertCenter.summary.actionableCount), delta: "Signals requiring attention" },
-            { label: "Due Today", value: String(alertCenter.summary.dueTodayCount), delta: "Watchlist follow-ups due on August 6, 2026" },
+            { label: "Due Today", value: String(alertCenter.summary.dueTodayCount), delta: `Watchlist follow-ups due on ${todayLabel}` },
             { label: "Search Signals", value: String(alertCenter.summary.searchSignalCount), delta: "Saved searches with more matches" },
             { label: "Ready Signals", value: String(alertCenter.summary.readyToBuyCount), delta: "Negotiating or ready-to-buy cases" }
           ].map((item) => (
@@ -118,15 +125,56 @@ export default async function AlertsPage() {
               <StatusPill tone={notificationPreference.digestEnabled ? "success" : "warning"}>
                 {notificationPreference.digestEnabled ? "Digest active" : "Digest paused"}
               </StatusPill>
+              <form action={sendTestDigest}>
+                <button
+                  type="submit"
+                  className="rounded-full bg-[var(--navy)] px-5 py-3 text-sm font-semibold text-white"
+                >
+                  Run test digest now
+                </button>
+              </form>
               <div className="rounded-3xl border border-[var(--border)] bg-white p-4">
                 <pre className="whitespace-pre-wrap font-mono text-sm text-[var(--foreground)]">{digestPreview}</pre>
               </div>
               <p className="text-sm text-[var(--foreground-muted)]">
-                This preview reflects the current in-app alert state on Thursday, August 6, 2026 and can later back email or external delivery.
+                This preview reflects the current in-app alert state on {todayLabel} and can later back email or external delivery.
               </p>
             </div>
           </Card>
         </div>
+
+        <Card title="Recent Digest Runs">
+          <div className="mt-5 space-y-4">
+            {digestRuns.length === 0 ? (
+              <div className="rounded-3xl bg-[var(--surface-muted)] p-5">
+                <p className="font-medium text-[var(--navy)]">No digest runs logged yet</p>
+                <p className="mt-2 text-sm text-[var(--foreground-muted)]">
+                  Run a test digest to create the first delivery log for this company and verify the configured channel.
+                </p>
+              </div>
+            ) : (
+              digestRuns.map((run) => (
+                <div key={run.id} className="rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-[var(--navy)]">{run.deliveryChannel.replaceAll("_", " ")}</p>
+                      <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                        {run.recipientEmail ?? "In-app only"} | {run.sentAt.toLocaleString("en-US")}
+                      </p>
+                    </div>
+                    <StatusPill tone={run.status === "SENT" ? "success" : "warning"}>{run.status.replaceAll("_", " ")}</StatusPill>
+                  </div>
+                  <p className="mt-3 text-sm text-[var(--foreground)]">
+                    Actionable alerts in run: {run.actionableCount}
+                  </p>
+                  <div className="mt-4 rounded-2xl border border-[var(--border)] bg-white p-4">
+                    <pre className="whitespace-pre-wrap font-mono text-xs text-[var(--foreground)]">{run.preview}</pre>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
 
         <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
           <Card title="Saved Search Signals">
