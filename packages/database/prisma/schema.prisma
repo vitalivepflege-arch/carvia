@@ -56,6 +56,12 @@ enum WatchlistActivityType {
   NOTE
 }
 
+enum ContactChannel {
+  CALL
+  EMAIL
+  MESSAGE
+}
+
 model User {
   id                   String    @id @default(cuid())
   email                String    @unique
@@ -85,6 +91,7 @@ model Company {
   analyses             VehicleAnalysis[]
   watchlistItems       Watchlist[]
   watchlistActivities  WatchlistActivity[]
+  watchlistContacts    WatchlistContact[]
   watchlistTasks       WatchlistTask[]
   savedSearches        SavedSearch[]
   importRuns           ImportRun[]
@@ -200,11 +207,33 @@ model Watchlist {
   priority     WatchlistPriority @default(MEDIUM)
   nextActionAt DateTime?
   activities   WatchlistActivity[]
+  contacts     WatchlistContact[]
   tasks        WatchlistTask[]
   createdAt    DateTime          @default(now())
 
   @@index([companyId, vehicleId])
   @@unique([companyId, vehicleId])
+}
+
+model WatchlistContact {
+  id                String         @id @default(cuid())
+  companyId         String
+  company           Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  watchlistId       String
+  watchlist         Watchlist      @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  fullName          String
+  companyName       String?
+  roleLabel         String?
+  email             String?
+  phone             String?
+  preferredChannel  ContactChannel @default(CALL)
+  notes             String?
+  lastContactedAt   DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([companyId, createdAt])
+  @@index([watchlistId, createdAt])
 }
 
 model WatchlistActivity {

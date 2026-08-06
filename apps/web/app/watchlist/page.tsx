@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Card, StatusPill } from "@carvia/ui";
 import { activityTypeLabels } from "../../lib/activities";
+import { contactChannelLabels } from "../../lib/contacts";
 import { createWatchlistActivity, deleteWatchlistActivity } from "../activities/actions";
+import { createWatchlistContact, deleteWatchlistContact } from "../contacts/actions";
 import { completeWatchlistTask, createWatchlistTask } from "../tasks/actions";
 import { requireOnboardedSession } from "../../lib/auth";
 import { getWatchlistItems, getWatchlistPipelineSummary } from "../../lib/watchlist";
@@ -28,6 +30,12 @@ const activityTone = {
   MEETING: "danger",
   MESSAGE: "info",
   NOTE: "info"
+} as const;
+
+const contactTone = {
+  CALL: "warning",
+  EMAIL: "success",
+  MESSAGE: "info"
 } as const;
 
 function formatStage(stage: string) {
@@ -154,6 +162,43 @@ export default async function WatchlistPage() {
                                   <input type="hidden" name="taskId" value={task.id} />
                                   <button type="submit" className="text-xs font-semibold text-[var(--navy)] underline-offset-4 hover:underline">
                                     Done
+                                  </button>
+                                </form>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl bg-[var(--surface-muted)] p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs uppercase tracking-[0.2em] text-[var(--foreground-muted)]">Contacts</p>
+                        <StatusPill tone={item.contacts.length > 0 ? "success" : "info"}>{item.contacts.length}</StatusPill>
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        {item.contacts.length === 0 ? (
+                          <p className="text-sm text-[var(--foreground-muted)]">No contact person saved yet.</p>
+                        ) : (
+                          item.contacts.slice(0, 3).map((contact) => (
+                            <div key={contact.id} className="rounded-2xl border border-[var(--border)] bg-white p-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <StatusPill tone={contactTone[contact.preferredChannel]}>{contactChannelLabels[contact.preferredChannel]}</StatusPill>
+                                  </div>
+                                  <p className="mt-2 text-sm font-medium text-[var(--navy)]">{contact.fullName}</p>
+                                  <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">
+                                    {[contact.roleLabel ?? "Role open", contact.companyName ?? "Company open"].join(" | ")}
+                                  </p>
+                                  <p className="mt-1 text-xs text-[var(--foreground-muted)]">
+                                    {[contact.email ?? "-", contact.phone ?? "-"].join(" | ")}
+                                  </p>
+                                </div>
+                                <form action={deleteWatchlistContact}>
+                                  <input type="hidden" name="contactId" value={contact.id} />
+                                  <button type="submit" className="text-xs font-semibold text-[var(--danger)] underline-offset-4 hover:underline">
+                                    Delete
                                   </button>
                                 </form>
                               </div>
@@ -352,6 +397,68 @@ export default async function WatchlistPage() {
                           className="rounded-full bg-[var(--navy)] px-4 py-2 text-sm font-semibold text-white"
                         >
                           Save activity
+                        </button>
+                      </div>
+                    </form>
+
+                    <form action={createWatchlistContact} className="rounded-3xl bg-[var(--surface-muted)] p-4">
+                      <input type="hidden" name="watchlistId" value={item.id} />
+                      <p className="text-sm font-medium text-[var(--navy)]">Add contact</p>
+                      <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                        Save the seller, broker, or verification contact directly on this opportunity.
+                      </p>
+                      <div className="mt-4 grid gap-4">
+                        <input
+                          name="fullName"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          placeholder="Anna Becker"
+                        />
+                        <input
+                          name="companyName"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          placeholder="Seller company"
+                        />
+                        <input
+                          name="roleLabel"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          placeholder="Sales manager"
+                        />
+                        <input
+                          name="email"
+                          type="email"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          placeholder="anna@example.com"
+                        />
+                        <input
+                          name="phone"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                          placeholder="+49 170 1234567"
+                        />
+                        <select
+                          name="preferredChannel"
+                          defaultValue="CALL"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                        >
+                          <option value="CALL">Call</option>
+                          <option value="EMAIL">Email</option>
+                          <option value="MESSAGE">Message</option>
+                        </select>
+                        <input
+                          name="lastContactedAt"
+                          type="date"
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                        />
+                        <textarea
+                          name="notes"
+                          rows={3}
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)] outline-none"
+                          placeholder="Optional contact notes"
+                        />
+                        <button
+                          type="submit"
+                          className="rounded-full bg-[var(--navy)] px-4 py-2 text-sm font-semibold text-white"
+                        >
+                          Save contact
                         </button>
                       </div>
                     </form>
