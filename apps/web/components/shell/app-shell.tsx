@@ -17,6 +17,7 @@ export function AppShell({
   activeSection?: string;
   alertSummary: {
     actionableCount: number;
+    capacityCount: number;
     dueTodayCount: number;
     executiveCount: number;
     readyToBuyCount: number;
@@ -125,7 +126,7 @@ export function AppShell({
             {[
               { label: "Actionable Alerts", value: String(alertSummary.actionableCount), delta: "Signals needing review" },
               { label: "Due Today", value: String(alertSummary.dueTodayCount), delta: "Pipeline and task follow-ups" },
-              { label: "Executive", value: String(alertSummary.executiveCount), delta: "Escalations for management" },
+              { label: "Capacity", value: String(alertSummary.capacityCount), delta: "Queues at risk of overload" },
               { label: "Providers", value: String(providerCount), delta: "Connected or staged adapters" }
             ].map((kpi) => (
               <Card key={kpi.label} title={kpi.label}>

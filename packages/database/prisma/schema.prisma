@@ -128,6 +128,10 @@ model Company {
   averagePurchaseBudget Decimal?        @db.Decimal(12, 2)
   minimumMarginTarget  Decimal?          @db.Decimal(12, 2)
   targetDaysToSell     Int?
+  buyerWipLimit        Int               @default(12)
+  salesWipLimit        Int               @default(10)
+  adminWipLimit        Int               @default(8)
+  taskSlaDays          Int               @default(2)
   users                User[]
   locations            DealerLocation[]
   profiles             DealerProfile[]

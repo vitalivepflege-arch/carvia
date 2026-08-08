@@ -42,7 +42,16 @@ export function buildAssigneeLabel(input: {
 }
 
 export async function getTeamWorkspace(companyId: string) {
-  const [teamMembers, openTasks] = await Promise.all([
+  const [company, teamMembers, openTasks] = await Promise.all([
+    prisma.company.findUnique({
+      where: { id: companyId },
+      select: {
+        adminWipLimit: true,
+        buyerWipLimit: true,
+        salesWipLimit: true,
+        taskSlaDays: true
+      }
+    }),
     prisma.user.findMany({
       where: { companyId },
       orderBy: [{ role: "asc" }, { name: "asc" }, { email: "asc" }],
@@ -99,10 +108,30 @@ export async function getTeamWorkspace(companyId: string) {
   const vehicleMap = new Map(vehicles.map((vehicle) => [vehicle.id, vehicle]));
 
   const today = new Date(new Date().toDateString());
+  const slaDays = company?.taskSlaDays ?? 2;
+  const slaThreshold = new Date(today.getTime() - slaDays * 24 * 60 * 60 * 1000);
   const taskCountsByUser = new Map<string, { automation: number; open: number; overdue: number }>();
+  const roleLoad = {
+    ADMIN: { automation: 0, open: 0, overdue: 0, stale: 0 },
+    BUYER: { automation: 0, open: 0, overdue: 0, stale: 0 },
+    OWNER: { automation: 0, open: 0, overdue: 0, stale: 0 },
+    SALES: { automation: 0, open: 0, overdue: 0, stale: 0 },
+    VIEWER: { automation: 0, open: 0, overdue: 0, stale: 0 }
+  };
 
   for (const task of openTasks) {
+    const roleKey = task.assigneeRole ?? "VIEWER";
     if (!task.assigneeUserId) {
+      roleLoad[roleKey].open += 1;
+      if (task.origin === "AUTOMATION") {
+        roleLoad[roleKey].automation += 1;
+      }
+      if (task.dueAt && task.dueAt < today) {
+        roleLoad[roleKey].overdue += 1;
+      }
+      if (task.createdAt < slaThreshold) {
+        roleLoad[roleKey].stale += 1;
+      }
       continue;
     }
 
@@ -113,11 +142,17 @@ export async function getTeamWorkspace(companyId: string) {
     };
 
     current.open += 1;
+    roleLoad[roleKey].open += 1;
     if (task.origin === "AUTOMATION") {
       current.automation += 1;
+      roleLoad[roleKey].automation += 1;
     }
     if (task.dueAt && task.dueAt < today) {
       current.overdue += 1;
+      roleLoad[roleKey].overdue += 1;
+    }
+    if (task.createdAt < slaThreshold) {
+      roleLoad[roleKey].stale += 1;
     }
 
     taskCountsByUser.set(task.assigneeUserId, current);
@@ -135,7 +170,62 @@ export async function getTeamWorkspace(companyId: string) {
     roleSummary[member.role] += 1;
   }
 
+  const roleCapacity = [
+    {
+      currentLoad: roleLoad.BUYER.open,
+      label: "Buyer",
+      limit: company?.buyerWipLimit ?? 12,
+      overdue: roleLoad.BUYER.overdue,
+      role: "BUYER" as const,
+      stale: roleLoad.BUYER.stale
+    },
+    {
+      currentLoad: roleLoad.SALES.open,
+      label: "Sales",
+      limit: company?.salesWipLimit ?? 10,
+      overdue: roleLoad.SALES.overdue,
+      role: "SALES" as const,
+      stale: roleLoad.SALES.stale
+    },
+    {
+      currentLoad: roleLoad.ADMIN.open + roleLoad.OWNER.open,
+      label: "Admin",
+      limit: company?.adminWipLimit ?? 8,
+      overdue: roleLoad.ADMIN.overdue + roleLoad.OWNER.overdue,
+      role: "ADMIN" as const,
+      stale: roleLoad.ADMIN.stale + roleLoad.OWNER.stale
+    }
+  ].map((entry) => ({
+    ...entry,
+    health:
+      entry.currentLoad > entry.limit || entry.overdue >= 3 || entry.stale >= 2
+        ? "critical"
+        : entry.currentLoad >= Math.max(1, entry.limit - 1) || entry.overdue > 0
+          ? "warning"
+          : "healthy"
+  }));
+
+  const lightestRole = [...roleCapacity].sort((a, b) => a.currentLoad - b.currentLoad)[0];
+  const rebalanceSuggestions = roleCapacity
+    .filter((role) => role.health !== "healthy")
+    .map((role) => ({
+      fromRole: role.role,
+      reason:
+        role.currentLoad > role.limit
+          ? `${role.label} queue is above WIP limit (${role.currentLoad}/${role.limit}).`
+          : role.stale > 0
+            ? `${role.label} queue has ${role.stale} tasks beyond the ${slaDays}-day SLA.`
+            : `${role.label} queue has ${role.overdue} overdue follow-ups.`,
+      toRole: lightestRole.role
+    }));
+
   return {
+    capacitySettings: {
+      adminWipLimit: company?.adminWipLimit ?? 8,
+      buyerWipLimit: company?.buyerWipLimit ?? 12,
+      salesWipLimit: company?.salesWipLimit ?? 10,
+      taskSlaDays: slaDays
+    },
     overview: {
       adminCount: roleSummary.ADMIN + roleSummary.OWNER,
       automationAssignedCount: openTasks.filter((task) => task.origin === "AUTOMATION").length,
@@ -144,6 +234,8 @@ export async function getTeamWorkspace(companyId: string) {
       salesCount: roleSummary.SALES,
       teamCount: teamMembers.length
     },
+    rebalanceSuggestions,
+    roleCapacity,
     roleSummary,
     taskBoard: openTasks.slice(0, 12).map((task) => ({
       ...task,

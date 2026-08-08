@@ -30,6 +30,13 @@ const bulkTaskAssignmentSchema = z.object({
   toUserId: z.string().optional()
 });
 
+const updateCapacitySettingsSchema = z.object({
+  adminWipLimit: z.coerce.number().int().positive(),
+  buyerWipLimit: z.coerce.number().int().positive(),
+  salesWipLimit: z.coerce.number().int().positive(),
+  taskSlaDays: z.coerce.number().int().positive()
+});
+
 function readOptionalString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value : undefined;
@@ -201,6 +208,30 @@ export async function bulkAssignRoleQueue(formData: FormData) {
       assigneeName: assigneeUser?.name ?? assigneeUser?.email ?? null,
       assigneeRole: assigneeUser?.role ?? parsed.toRole,
       assigneeUserId: assigneeUser?.id ?? null
+    }
+  });
+
+  revalidateTeamSurfaces();
+}
+
+export async function updateCapacitySettings(formData: FormData) {
+  const session = await requireTeamManager();
+  const parsed = updateCapacitySettingsSchema.parse({
+    adminWipLimit: formData.get("adminWipLimit"),
+    buyerWipLimit: formData.get("buyerWipLimit"),
+    salesWipLimit: formData.get("salesWipLimit"),
+    taskSlaDays: formData.get("taskSlaDays")
+  });
+
+  await prisma.company.update({
+    where: {
+      id: session.user.companyId!
+    },
+    data: {
+      adminWipLimit: parsed.adminWipLimit,
+      buyerWipLimit: parsed.buyerWipLimit,
+      salesWipLimit: parsed.salesWipLimit,
+      taskSlaDays: parsed.taskSlaDays
     }
   });
 

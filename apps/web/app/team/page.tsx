@@ -2,7 +2,7 @@ import { Card, StatusPill } from "@carvia/ui";
 import { requireOnboardedSession } from "../../lib/auth";
 import { getTeamWorkspace, userRoleLabels } from "../../lib/team";
 import { watchlistStageLabels } from "../../lib/watchlist";
-import { bulkAssignRoleQueue, createTeamMember, updateTaskAssignment, updateTeamMemberRole } from "./actions";
+import { bulkAssignRoleQueue, createTeamMember, updateCapacitySettings, updateTaskAssignment, updateTeamMemberRole } from "./actions";
 
 const priorityTone = {
   HIGH: "danger",
@@ -42,6 +42,24 @@ export default async function TeamPage() {
             <Card key={metric.label} title={metric.label}>
               <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
               <p className="mt-2 text-sm text-[var(--foreground-muted)]">{metric.delta}</p>
+            </Card>
+          ))}
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          {workspace.roleCapacity.map((role) => (
+            <Card key={role.role} title={`${role.label} Capacity`}>
+              <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">
+                {role.currentLoad}/{role.limit}
+              </p>
+              <p className="mt-2 text-sm text-[var(--foreground-muted)]">
+                Overdue {role.overdue} | SLA breach {role.stale}
+              </p>
+              <div className="mt-4">
+                <StatusPill tone={role.health === "critical" ? "danger" : role.health === "warning" ? "warning" : "success"}>
+                  {role.health === "critical" ? "Overloaded" : role.health === "warning" ? "At risk" : "Healthy"}
+                </StatusPill>
+              </div>
             </Card>
           ))}
         </div>
@@ -245,6 +263,59 @@ export default async function TeamPage() {
               </div>
             </Card>
 
+            <Card title="Capacity Settings">
+              <div className="mt-5 space-y-4">
+                <p className="text-sm text-[var(--foreground-muted)]">
+                  Define how much concurrent work each lane should carry before Carvia starts flagging overload and stale-task risk.
+                </p>
+                {canManageTeam ? (
+                  <form action={updateCapacitySettings} className="grid gap-4">
+                    <input
+                      name="buyerWipLimit"
+                      type="number"
+                      min={1}
+                      defaultValue={workspace.capacitySettings.buyerWipLimit}
+                      className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                    />
+                    <input
+                      name="salesWipLimit"
+                      type="number"
+                      min={1}
+                      defaultValue={workspace.capacitySettings.salesWipLimit}
+                      className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                    />
+                    <input
+                      name="adminWipLimit"
+                      type="number"
+                      min={1}
+                      defaultValue={workspace.capacitySettings.adminWipLimit}
+                      className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                    />
+                    <input
+                      name="taskSlaDays"
+                      type="number"
+                      min={1}
+                      defaultValue={workspace.capacitySettings.taskSlaDays}
+                      className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                    />
+                    <button
+                      type="submit"
+                      className="rounded-full bg-[var(--navy)] px-4 py-2 text-sm font-semibold text-white"
+                    >
+                      Save capacity settings
+                    </button>
+                  </form>
+                ) : (
+                  <div className="rounded-3xl bg-[var(--surface-muted)] p-5">
+                    <p className="font-medium text-[var(--navy)]">Capacity settings need Owner or Admin access</p>
+                    <p className="mt-2 text-sm text-[var(--foreground-muted)]">
+                      WIP and SLA controls are visible here, but only tenant managers can change these thresholds.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </Card>
+
             <Card title="Create Team Member">
               <div className="mt-5 space-y-4">
                 <p className="text-sm text-[var(--foreground-muted)]">
@@ -320,6 +391,18 @@ export default async function TeamPage() {
                     <span className="font-semibold text-[var(--navy)]">{workspace.overview.automationAssignedCount}</span>
                   </p>
                 </div>
+                {workspace.rebalanceSuggestions.length > 0 ? (
+                  <div className="rounded-3xl border border-[rgba(190,63,51,0.2)] bg-[rgba(190,63,51,0.08)] p-4">
+                    <p className="font-medium text-[var(--navy)]">Recommended rebalancing</p>
+                    <div className="mt-3 space-y-2">
+                      {workspace.rebalanceSuggestions.map((suggestion) => (
+                        <p key={`${suggestion.fromRole}-${suggestion.toRole}`} className="text-sm text-[var(--foreground)]">
+                          {userRoleLabels[suggestion.fromRole]} {"->"} {userRoleLabels[suggestion.toRole]}: {suggestion.reason}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </Card>
           </div>

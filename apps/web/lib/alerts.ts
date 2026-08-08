@@ -2,7 +2,7 @@ import { prisma } from "@carvia/database";
 import { MockVehicleProvider } from "@carvia/providers";
 import { getManagementWorkspace } from "./management";
 import { getSavedSearches } from "./market-search";
-import { buildAssigneeLabel } from "./team";
+import { buildAssigneeLabel, getTeamWorkspace, userRoleLabels } from "./team";
 
 const mockVehicleProvider = new MockVehicleProvider();
 
@@ -32,7 +32,7 @@ export async function getNotificationPreference(companyId: string) {
 }
 
 export async function getAlertCenter(companyId: string) {
-  const [savedSearches, watchlistItems, dueTaskAlerts, managementWorkspace] = await Promise.all([
+  const [savedSearches, watchlistItems, dueTaskAlerts, managementWorkspace, teamWorkspace] = await Promise.all([
     getSavedSearches(companyId),
     prisma.watchlist.findMany({
       where: { companyId },
@@ -74,7 +74,8 @@ export async function getAlertCenter(companyId: string) {
         }
       }
     }),
-    getManagementWorkspace(companyId)
+    getManagementWorkspace(companyId),
+    getTeamWorkspace(companyId)
   ]);
 
   const vehicleIds = watchlistItems.map((item) => item.vehicleId);
@@ -191,7 +192,19 @@ export async function getAlertCenter(companyId: string) {
     return alert.severity === "warning";
   }).length;
 
+  const capacityAlerts = teamWorkspace.roleCapacity
+    .filter((role) => role.health !== "healthy")
+    .map((role) => ({
+      description: `${role.label} queue at ${role.currentLoad}/${role.limit} WIP with ${role.overdue} overdue and ${role.stale} SLA-breached tasks.`,
+      id: `capacity-${role.role.toLowerCase()}`,
+      label: `${role.label} capacity`,
+      recommendedRole: teamWorkspace.rebalanceSuggestions.find((suggestion) => suggestion.fromRole === role.role)?.toRole ?? null,
+      severity: role.health === "critical" ? "warning" : "info",
+      value: role.currentLoad
+    }));
+
   return {
+    capacityAlerts,
     duePipelineAlerts,
     dueTaskAlerts: dueTaskAlerts.map((task) => ({
       assigneeName: task.assigneeName,
@@ -218,8 +231,10 @@ export async function getAlertCenter(companyId: string) {
         dueTaskAlerts.length +
         searchAlerts.filter((alert) => alert.delta > 0).length +
         readyToBuyAlerts.length +
-        executiveActionableCount,
+        executiveActionableCount +
+        capacityAlerts.length,
       automatedTaskCount: dueTaskAlerts.filter((task) => task.origin === "AUTOMATION").length,
+      capacityCount: capacityAlerts.length,
       dueTodayCount: duePipelineAlerts.length + dueTaskAlerts.length,
       executiveCount: executiveActionableCount,
       readyToBuyCount: readyToBuyAlerts.length,
@@ -245,6 +260,7 @@ export function buildAlertDigestPreview(input: Awaited<ReturnType<typeof getAler
     `Search signals: ${input.summary.searchSignalCount}`,
     `Ready signals: ${input.summary.readyToBuyCount}`,
     `Executive escalations: ${input.summary.executiveCount}`,
+    `Capacity risks: ${input.summary.capacityCount}`,
     ""
   ];
 
@@ -289,6 +305,14 @@ export function buildAlertDigestPreview(input: Awaited<ReturnType<typeof getAler
     lines.push("Executive escalations:");
     for (const alert of input.executiveAlerts.slice(0, 4)) {
       lines.push(`- ${alert.label}: ${alert.description}`);
+    }
+    lines.push("");
+  }
+
+  if (input.capacityAlerts.length > 0) {
+    lines.push("Capacity risks:");
+    for (const alert of input.capacityAlerts.slice(0, 3)) {
+      lines.push(`- ${alert.label}: ${alert.description}${alert.recommendedRole ? ` Rebalance toward ${userRoleLabels[alert.recommendedRole]}.` : ""}`);
     }
   }
 
