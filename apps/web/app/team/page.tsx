@@ -2,7 +2,14 @@ import { Card, StatusPill } from "@carvia/ui";
 import { requireOnboardedSession } from "../../lib/auth";
 import { getTeamWorkspace, userRoleLabels } from "../../lib/team";
 import { watchlistStageLabels } from "../../lib/watchlist";
-import { bulkAssignRoleQueue, createTeamMember, updateCapacitySettings, updateTaskAssignment, updateTeamMemberRole } from "./actions";
+import {
+  applyRebalanceSuggestion,
+  bulkAssignRoleQueue,
+  createTeamMember,
+  updateCapacitySettings,
+  updateTaskAssignment,
+  updateTeamMemberRole
+} from "./actions";
 
 const priorityTone = {
   HIGH: "danger",
@@ -396,9 +403,29 @@ export default async function TeamPage() {
                     <p className="font-medium text-[var(--navy)]">Recommended rebalancing</p>
                     <div className="mt-3 space-y-2">
                       {workspace.rebalanceSuggestions.map((suggestion) => (
-                        <p key={`${suggestion.fromRole}-${suggestion.toRole}`} className="text-sm text-[var(--foreground)]">
-                          {userRoleLabels[suggestion.fromRole]} {"->"} {userRoleLabels[suggestion.toRole]}: {suggestion.reason}
-                        </p>
+                        <div
+                          key={`${suggestion.fromRole}-${suggestion.toRole}`}
+                          className="rounded-2xl border border-[rgba(190,63,51,0.14)] bg-white/70 p-3"
+                        >
+                          <p className="text-sm text-[var(--foreground)]">
+                            {userRoleLabels[suggestion.fromRole]} {"->"} {userRoleLabels[suggestion.toRole]}: {suggestion.reason}
+                          </p>
+                          <p className="mt-2 text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">
+                            Affects {suggestion.affectedTaskCount} open tasks
+                          </p>
+                          {canManageTeam ? (
+                            <form action={applyRebalanceSuggestion} className="mt-3">
+                              <input type="hidden" name="fromRole" value={suggestion.fromRole} />
+                              <input type="hidden" name="toRole" value={suggestion.toRole} />
+                              <button
+                                type="submit"
+                                className="rounded-full bg-[var(--navy)] px-4 py-2 text-sm font-semibold text-white"
+                              >
+                                Apply suggestion
+                              </button>
+                            </form>
+                          ) : null}
+                        </div>
                       ))}
                     </div>
                   </div>

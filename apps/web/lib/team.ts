@@ -209,6 +209,7 @@ export async function getTeamWorkspace(companyId: string) {
   const rebalanceSuggestions = roleCapacity
     .filter((role) => role.health !== "healthy")
     .map((role) => ({
+      affectedTaskCount: openTasks.filter((task) => (task.assigneeRole ?? "VIEWER") === role.role).length,
       fromRole: role.role,
       reason:
         role.currentLoad > role.limit

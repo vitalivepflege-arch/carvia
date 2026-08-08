@@ -37,6 +37,11 @@ const updateCapacitySettingsSchema = z.object({
   taskSlaDays: z.coerce.number().int().positive()
 });
 
+const applyRebalanceSuggestionSchema = z.object({
+  fromRole: z.enum(["OWNER", "ADMIN", "BUYER", "SALES", "VIEWER"]),
+  toRole: z.enum(["OWNER", "ADMIN", "BUYER", "SALES", "VIEWER"])
+});
+
 function readOptionalString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === "string" ? value : undefined;
@@ -232,6 +237,43 @@ export async function updateCapacitySettings(formData: FormData) {
       buyerWipLimit: parsed.buyerWipLimit,
       salesWipLimit: parsed.salesWipLimit,
       taskSlaDays: parsed.taskSlaDays
+    }
+  });
+
+  revalidateTeamSurfaces();
+}
+
+export async function applyRebalanceSuggestion(formData: FormData) {
+  const session = await requireTeamManager();
+  const parsed = applyRebalanceSuggestionSchema.parse({
+    fromRole: formData.get("fromRole"),
+    toRole: formData.get("toRole")
+  });
+
+  const targetUser = await prisma.user.findFirst({
+    where: {
+      companyId: session.user.companyId!,
+      role: parsed.toRole
+    },
+    orderBy: [{ name: "asc" }, { email: "asc" }],
+    select: {
+      email: true,
+      id: true,
+      name: true,
+      role: true
+    }
+  });
+
+  await prisma.watchlistTask.updateMany({
+    where: {
+      assigneeRole: parsed.fromRole,
+      companyId: session.user.companyId!,
+      status: "OPEN"
+    },
+    data: {
+      assigneeName: targetUser?.name ?? targetUser?.email ?? null,
+      assigneeRole: targetUser?.role ?? parsed.toRole,
+      assigneeUserId: targetUser?.id ?? null
     }
   });
 
