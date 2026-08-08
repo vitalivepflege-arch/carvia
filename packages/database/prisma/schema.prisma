@@ -134,6 +134,7 @@ model Company {
   importRuns           ImportRun[]
   notificationPreference NotificationPreference?
   notificationDigestRuns NotificationDigestRun[]
+  automationRuns       AutomationRun[]
   providers            ProviderCredential[]
   providerSyncRuns     ProviderSyncRun[]
   createdAt            DateTime          @default(now())
@@ -411,6 +412,20 @@ model NotificationDigestRun {
   sentAt           DateTime @default(now())
 
   @@index([companyId, sentAt])
+}
+
+model AutomationRun {
+  id                 String   @id @default(cuid())
+  companyId          String
+  company            Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  runType            String
+  status             String
+  escalatedCount     Int      @default(0)
+  updatedCount       Int      @default(0)
+  preview            String
+  createdAt          DateTime @default(now())
+
+  @@index([companyId, createdAt])
 }
 
 model ProviderSyncRun {
