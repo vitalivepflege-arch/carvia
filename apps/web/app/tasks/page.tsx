@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, StatusPill } from "@carvia/ui";
 import { requireOnboardedSession } from "../../lib/auth";
-import { getTaskWorkspace } from "../../lib/tasks";
+import { getTaskWorkspace, getTaskWorkspaceSummary } from "../../lib/tasks";
 import { watchlistStageLabels } from "../../lib/watchlist";
 import { completeWatchlistTask, deleteWatchlistTask, reopenWatchlistTask } from "./actions";
 
@@ -28,10 +28,12 @@ function formatDueLabel(value: Date | null, isOpen: boolean) {
 
 export default async function TasksPage() {
   const session = await requireOnboardedSession();
-  const tasks = await getTaskWorkspace(session.user.companyId!);
+  const [tasks, summary] = await Promise.all([
+    getTaskWorkspace(session.user.companyId!),
+    getTaskWorkspaceSummary(session.user.companyId!)
+  ]);
   const openTasks = tasks.filter((task) => task.status === "OPEN");
   const doneTasks = tasks.filter((task) => task.status === "DONE");
-  const overdueCount = openTasks.filter((task) => task.dueAt && task.dueAt < new Date(new Date().toDateString())).length;
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#faf8f3_0%,#eff0eb_100%)] px-6 py-10">
@@ -62,10 +64,10 @@ export default async function TasksPage() {
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {[
-            { label: "Open Tasks", value: String(openTasks.length), delta: "Pending follow-up work" },
-            { label: "Overdue", value: String(overdueCount), delta: "Open items past their due date" },
-            { label: "Completed", value: String(doneTasks.length), delta: "Closed task history" },
-            { label: "Coverage", value: `${tasks.length === 0 ? 0 : Math.round((openTasks.length / tasks.length) * 100)}%`, delta: "Share of tasks still active" }
+            { label: "Open Tasks", value: String(summary.openCount), delta: "Pending follow-up work" },
+            { label: "Overdue", value: String(summary.overdueCount), delta: "Open items past their due date" },
+            { label: "Automation", value: String(summary.automatedOpenCount), delta: "Rule-generated operating tasks" },
+            { label: "Completed", value: String(summary.doneCount), delta: "Closed task history" }
           ].map((metric) => (
             <Card key={metric.label} title={metric.label}>
               <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
@@ -89,7 +91,10 @@ export default async function TasksPage() {
                   <div key={task.id} className="rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <p className="font-medium text-[var(--navy)]">{task.title}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium text-[var(--navy)]">{task.title}</p>
+                          {task.origin === "AUTOMATION" ? <StatusPill tone="info">Automation</StatusPill> : null}
+                        </div>
                         <p className="mt-1 text-sm text-[var(--foreground-muted)]">
                           {task.vehicle ? `${task.vehicle.make} ${task.vehicle.model}` : "Tracked vehicle"} |{" "}
                           {watchlistStageLabels[task.watchlist.stage]}
@@ -144,7 +149,10 @@ export default async function TasksPage() {
                   <div key={task.id} className="rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <p className="font-medium text-[var(--navy)]">{task.title}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-medium text-[var(--navy)]">{task.title}</p>
+                          {task.origin === "AUTOMATION" ? <StatusPill tone="info">Automation</StatusPill> : null}
+                        </div>
                         <p className="mt-1 text-sm text-[var(--foreground-muted)]">
                           {task.vehicle ? `${task.vehicle.make} ${task.vehicle.model}` : "Tracked vehicle"} |{" "}
                           {task.completedAt?.toLocaleDateString("en-US", { dateStyle: "medium" }) ?? "Completed"}

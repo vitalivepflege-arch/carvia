@@ -51,3 +51,27 @@ export async function getOpenTaskCount(companyId: string) {
     }
   });
 }
+
+export async function getTaskWorkspaceSummary(companyId: string) {
+  const tasks = await prisma.watchlistTask.findMany({
+    where: { companyId },
+    select: {
+      dueAt: true,
+      origin: true,
+      status: true
+    }
+  });
+
+  const today = new Date(new Date().toDateString());
+  const openTasks = tasks.filter((task) => task.status === "OPEN");
+  const doneTasks = tasks.filter((task) => task.status === "DONE");
+  const automatedOpenTasks = openTasks.filter((task) => task.origin === "AUTOMATION");
+  const overdueTasks = openTasks.filter((task) => task.dueAt && task.dueAt < today);
+
+  return {
+    automatedOpenCount: automatedOpenTasks.length,
+    doneCount: doneTasks.length,
+    openCount: openTasks.length,
+    overdueCount: overdueTasks.length
+  };
+}

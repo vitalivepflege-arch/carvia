@@ -24,6 +24,7 @@ function readOptionalString(formData: FormData, key: string) {
 function revalidateTaskSurfaces() {
   revalidatePath("/");
   revalidatePath("/alerts");
+  revalidatePath("/automation-ops");
   revalidatePath("/pipeline");
   revalidatePath("/tasks");
   revalidatePath("/watchlist");

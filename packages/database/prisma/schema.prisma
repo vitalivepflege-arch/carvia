@@ -84,6 +84,11 @@ enum TaskStatus {
   DONE
 }
 
+enum TaskOrigin {
+  MANUAL
+  AUTOMATION
+}
+
 enum WatchlistActivityType {
   CALL
   EMAIL
@@ -332,12 +337,17 @@ model WatchlistTask {
   assigneeName  String?
   dueAt         DateTime?
   status        TaskStatus @default(OPEN)
+  origin        TaskOrigin @default(MANUAL)
+  automationRule String?
+  automationKey String?
   completedAt   DateTime?
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
   @@index([companyId, status, dueAt])
   @@index([watchlistId, createdAt])
+  @@index([companyId, origin, status])
+  @@index([companyId, automationKey])
 }
 
 model ProviderCredential {

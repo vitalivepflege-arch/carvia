@@ -42,6 +42,18 @@ export default async function AutomationOpsPage() {
           ))}
         </div>
 
+        <div className="grid gap-4 md:grid-cols-2">
+          {[
+            { label: "Due Cadence Tasks", value: String(workspace.summary.dueActionCandidates), delta: "Watchlist entries with next action due now" },
+            { label: "Open Automation Tasks", value: String(workspace.summary.openAutomationTasks), delta: "Rule-generated operating work still open" }
+          ].map((metric) => (
+            <Card key={metric.label} title={metric.label}>
+              <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
+              <p className="mt-2 text-sm text-[var(--foreground-muted)]">{metric.delta}</p>
+            </Card>
+          ))}
+        </div>
+
         <Card title="Recent Automation Runs">
           <div className="mt-5 space-y-4">
             {workspace.recentRuns.length === 0 ? (
