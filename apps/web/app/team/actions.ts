@@ -47,6 +47,30 @@ function readOptionalString(formData: FormData, key: string) {
   return typeof value === "string" ? value : undefined;
 }
 
+async function createTeamOperationLog(input: {
+  actionType: string;
+  actorUserId: string;
+  actorUserName: string | null;
+  companyId: string;
+  details: Record<string, unknown>;
+  summary: string;
+  targetId?: string | null;
+  targetType: string;
+}) {
+  await prisma.teamOperationLog.create({
+    data: {
+      actionType: input.actionType,
+      actorUserId: input.actorUserId,
+      actorUserName: input.actorUserName,
+      companyId: input.companyId,
+      details: JSON.parse(JSON.stringify(input.details)),
+      summary: input.summary,
+      targetId: input.targetId ?? null,
+      targetType: input.targetType
+    }
+  });
+}
+
 function revalidateTeamSurfaces() {
   revalidatePath("/");
   revalidatePath("/alerts");
@@ -95,6 +119,21 @@ export async function createTeamMember(formData: FormData) {
     }
   });
 
+  await createTeamOperationLog({
+    actionType: "TEAM_MEMBER_CREATED",
+    actorUserId: session.user.id,
+    actorUserName: session.user.name ?? null,
+    companyId: session.user.companyId!,
+    details: {
+      email,
+      name: parsed.name,
+      role: parsed.role
+    },
+    summary: `Created teammate ${parsed.name} with role ${parsed.role}.`,
+    targetId: email,
+    targetType: "USER"
+  });
+
   revalidateTeamSurfaces();
 }
 
@@ -124,11 +163,27 @@ export async function updateTeamMemberRole(formData: FormData) {
     return;
   }
 
+  const previousRole = member.role;
+
   await prisma.user.update({
     where: { id: member.id },
     data: {
       role: parsed.role
     }
+  });
+
+  await createTeamOperationLog({
+    actionType: "TEAM_ROLE_UPDATED",
+    actorUserId: session.user.id,
+    actorUserName: session.user.name ?? null,
+    companyId: session.user.companyId!,
+    details: {
+      nextRole: parsed.role,
+      previousRole
+    },
+    summary: `Changed team member role from ${previousRole} to ${parsed.role}.`,
+    targetId: member.id,
+    targetType: "USER"
   });
 
   revalidateTeamSurfaces();
@@ -153,6 +208,12 @@ export async function updateTaskAssignment(formData: FormData) {
     return;
   }
 
+  const previousAssignment = {
+    assigneeName: task.assigneeName,
+    assigneeRole: task.assigneeRole,
+    assigneeUserId: task.assigneeUserId
+  };
+
   const assigneeUser = parsed.assigneeUserId
     ? await prisma.user.findFirst({
         where: {
@@ -175,6 +236,24 @@ export async function updateTaskAssignment(formData: FormData) {
       assigneeRole: assigneeUser?.role ?? parsed.assigneeRole,
       assigneeUserId: assigneeUser?.id ?? null
     }
+  });
+
+  await createTeamOperationLog({
+    actionType: "TASK_ASSIGNMENT_UPDATED",
+    actorUserId: session.user.id,
+    actorUserName: session.user.name ?? null,
+    companyId: session.user.companyId!,
+    details: {
+      nextAssignment: {
+        assigneeName: assigneeUser?.name ?? assigneeUser?.email ?? task.assigneeName,
+        assigneeRole: assigneeUser?.role ?? parsed.assigneeRole,
+        assigneeUserId: assigneeUser?.id ?? null
+      },
+      previousAssignment
+    },
+    summary: `Updated assignment for task ${task.title}.`,
+    targetId: task.id,
+    targetType: "TASK"
   });
 
   revalidateTeamSurfaces();
@@ -203,6 +282,14 @@ export async function bulkAssignRoleQueue(formData: FormData) {
       })
     : null;
 
+  const affectedCount = await prisma.watchlistTask.count({
+    where: {
+      assigneeRole: parsed.fromRole,
+      companyId: session.user.companyId!,
+      status: "OPEN"
+    }
+  });
+
   await prisma.watchlistTask.updateMany({
     where: {
       assigneeRole: parsed.fromRole,
@@ -214,6 +301,21 @@ export async function bulkAssignRoleQueue(formData: FormData) {
       assigneeRole: assigneeUser?.role ?? parsed.toRole,
       assigneeUserId: assigneeUser?.id ?? null
     }
+  });
+
+  await createTeamOperationLog({
+    actionType: "QUEUE_REBALANCED",
+    actorUserId: session.user.id,
+    actorUserName: session.user.name ?? null,
+    companyId: session.user.companyId!,
+    details: {
+      affectedCount,
+      fromRole: parsed.fromRole,
+      toRole: parsed.toRole,
+      toUserId: assigneeUser?.id ?? null
+    },
+    summary: `Rebalanced ${affectedCount} open tasks from ${parsed.fromRole} to ${assigneeUser?.role ?? parsed.toRole}.`,
+    targetType: "QUEUE"
   });
 
   revalidateTeamSurfaces();
@@ -228,6 +330,18 @@ export async function updateCapacitySettings(formData: FormData) {
     taskSlaDays: formData.get("taskSlaDays")
   });
 
+  const currentCompany = await prisma.company.findUnique({
+    where: {
+      id: session.user.companyId!
+    },
+    select: {
+      adminWipLimit: true,
+      buyerWipLimit: true,
+      salesWipLimit: true,
+      taskSlaDays: true
+    }
+  });
+
   await prisma.company.update({
     where: {
       id: session.user.companyId!
@@ -238,6 +352,20 @@ export async function updateCapacitySettings(formData: FormData) {
       salesWipLimit: parsed.salesWipLimit,
       taskSlaDays: parsed.taskSlaDays
     }
+  });
+
+  await createTeamOperationLog({
+    actionType: "CAPACITY_SETTINGS_UPDATED",
+    actorUserId: session.user.id,
+    actorUserName: session.user.name ?? null,
+    companyId: session.user.companyId!,
+    details: {
+      next: parsed,
+      previous: currentCompany
+    },
+    summary: `Updated WIP and SLA settings for team operations.`,
+    targetId: session.user.companyId!,
+    targetType: "COMPANY"
   });
 
   revalidateTeamSurfaces();
@@ -264,6 +392,14 @@ export async function applyRebalanceSuggestion(formData: FormData) {
     }
   });
 
+  const affectedCount = await prisma.watchlistTask.count({
+    where: {
+      assigneeRole: parsed.fromRole,
+      companyId: session.user.companyId!,
+      status: "OPEN"
+    }
+  });
+
   await prisma.watchlistTask.updateMany({
     where: {
       assigneeRole: parsed.fromRole,
@@ -275,6 +411,21 @@ export async function applyRebalanceSuggestion(formData: FormData) {
       assigneeRole: targetUser?.role ?? parsed.toRole,
       assigneeUserId: targetUser?.id ?? null
     }
+  });
+
+  await createTeamOperationLog({
+    actionType: "REBALANCE_SUGGESTION_APPLIED",
+    actorUserId: session.user.id,
+    actorUserName: session.user.name ?? null,
+    companyId: session.user.companyId!,
+    details: {
+      affectedCount,
+      fromRole: parsed.fromRole,
+      targetUserId: targetUser?.id ?? null,
+      toRole: targetUser?.role ?? parsed.toRole
+    },
+    summary: `Applied rebalance suggestion for ${affectedCount} tasks from ${parsed.fromRole} to ${targetUser?.role ?? parsed.toRole}.`,
+    targetType: "QUEUE"
   });
 
   revalidateTeamSurfaces();

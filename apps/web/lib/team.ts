@@ -42,7 +42,7 @@ export function buildAssigneeLabel(input: {
 }
 
 export async function getTeamWorkspace(companyId: string) {
-  const [company, teamMembers, openTasks] = await Promise.all([
+  const [company, teamMembers, openTasks, operationLogs] = await Promise.all([
     prisma.company.findUnique({
       where: { id: companyId },
       select: {
@@ -87,6 +87,11 @@ export async function getTeamWorkspace(companyId: string) {
           }
         }
       }
+    }),
+    prisma.teamOperationLog.findMany({
+      where: { companyId },
+      orderBy: { createdAt: "desc" },
+      take: 12
     })
   ]);
 
@@ -238,6 +243,7 @@ export async function getTeamWorkspace(companyId: string) {
     rebalanceSuggestions,
     roleCapacity,
     roleSummary,
+    operationLogs,
     taskBoard: openTasks.slice(0, 12).map((task) => ({
       ...task,
       assigneeLabel: buildAssigneeLabel({

@@ -140,6 +140,7 @@ model Company {
   watchlistActivities  WatchlistActivity[]
   watchlistContacts    WatchlistContact[]
   watchlistTasks       WatchlistTask[]
+  teamOperationLogs    TeamOperationLog[]
   savedSearches        SavedSearch[]
   importRuns           ImportRun[]
   notificationPreference NotificationPreference?
@@ -358,6 +359,23 @@ model WatchlistTask {
   @@index([companyId, automationKey])
   @@index([companyId, assigneeRole, status])
   @@index([assigneeUserId, status])
+}
+
+model TeamOperationLog {
+  id               String   @id @default(cuid())
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  actorUserId      String?
+  actorUserName    String?
+  actionType       String
+  targetType       String
+  targetId         String?
+  summary          String
+  details          Json
+  createdAt        DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([companyId, actionType, createdAt])
 }
 
 model ProviderCredential {
