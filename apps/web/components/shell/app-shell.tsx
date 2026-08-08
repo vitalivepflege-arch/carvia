@@ -18,6 +18,7 @@ export function AppShell({
   alertSummary: {
     actionableCount: number;
     dueTodayCount: number;
+    executiveCount: number;
     readyToBuyCount: number;
     searchSignalCount: number;
   };
@@ -124,7 +125,7 @@ export function AppShell({
             {[
               { label: "Actionable Alerts", value: String(alertSummary.actionableCount), delta: "Signals needing review" },
               { label: "Due Today", value: String(alertSummary.dueTodayCount), delta: "Pipeline and task follow-ups" },
-              { label: "Search Signals", value: String(alertSummary.searchSignalCount), delta: "Saved search changes" },
+              { label: "Executive", value: String(alertSummary.executiveCount), delta: "Escalations for management" },
               { label: "Providers", value: String(providerCount), delta: "Connected or staged adapters" }
             ].map((kpi) => (
               <Card key={kpi.label} title={kpi.label}>

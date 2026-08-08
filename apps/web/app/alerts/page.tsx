@@ -55,7 +55,7 @@ export default async function AlertsPage() {
             { label: "Actionable", value: String(alertCenter.summary.actionableCount), delta: "Signals requiring attention" },
             { label: "Due Today", value: String(alertCenter.summary.dueTodayCount), delta: `Watchlist and task follow-ups due on ${todayLabel}` },
             { label: "Search Signals", value: String(alertCenter.summary.searchSignalCount), delta: "Saved searches with more matches" },
-            { label: "Ready Signals", value: String(alertCenter.summary.readyToBuyCount), delta: "Negotiating or ready-to-buy cases" }
+            { label: "Executive", value: String(alertCenter.summary.executiveCount), delta: "Management escalations" }
           ].map((item) => (
             <Card key={item.label} title={item.label}>
               <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{item.value}</p>
@@ -63,6 +63,38 @@ export default async function AlertsPage() {
             </Card>
           ))}
         </div>
+
+        <Card title="Executive Escalations">
+          <div className="mt-5 space-y-4">
+            {alertCenter.executiveAlerts.map((alert) => (
+              <div key={alert.id} className="rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium text-[var(--navy)]">{alert.label}</p>
+                    <p className="mt-1 text-sm text-[var(--foreground-muted)]">{alert.description}</p>
+                  </div>
+                  <StatusPill tone={severityTone[alert.severity as keyof typeof severityTone]}>
+                    {alert.id === "lead-conversion" || alert.id === "win-rate" ? `${alert.value}%` : String(alert.value)}
+                  </StatusPill>
+                </div>
+              </div>
+            ))}
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/management"
+                className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
+              >
+                Open management
+              </Link>
+              <Link
+                href="/inventory"
+                className="rounded-full border border-[var(--border)] bg-white px-4 py-2 text-sm font-medium text-[var(--navy)]"
+              >
+                Open inventory
+              </Link>
+            </div>
+          </div>
+        </Card>
 
         <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
           <Card title="Digest Preferences">

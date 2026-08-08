@@ -1,5 +1,6 @@
 import { prisma } from "@carvia/database";
 import { MockVehicleProvider } from "@carvia/providers";
+import { getManagementWorkspace } from "./management";
 import { getSavedSearches } from "./market-search";
 
 const mockVehicleProvider = new MockVehicleProvider();
@@ -30,7 +31,7 @@ export async function getNotificationPreference(companyId: string) {
 }
 
 export async function getAlertCenter(companyId: string) {
-  const [savedSearches, watchlistItems, dueTaskAlerts] = await Promise.all([
+  const [savedSearches, watchlistItems, dueTaskAlerts, managementWorkspace] = await Promise.all([
     getSavedSearches(companyId),
     prisma.watchlist.findMany({
       where: { companyId },
@@ -64,7 +65,8 @@ export async function getAlertCenter(companyId: string) {
           }
         }
       }
-    })
+    }),
+    getManagementWorkspace(companyId)
   ]);
 
   const vehicleIds = watchlistItems.map((item) => item.vehicleId);
@@ -142,6 +144,45 @@ export async function getAlertCenter(companyId: string) {
       vehicle: vehicleMap.get(item.vehicleId) ?? null
     }));
 
+  const executiveAlerts = [
+    {
+      description: `Units above target stock days: ${managementWorkspace.overview.overdueStock}.`,
+      id: "overdue-stock",
+      label: "Overdue stock",
+      severity: managementWorkspace.overview.overdueStock > 0 ? "warning" : "info",
+      value: managementWorkspace.overview.overdueStock
+    },
+    {
+      description: `Sold units below company margin target: ${managementWorkspace.overview.belowMarginCount}.`,
+      id: "below-margin",
+      label: "Below target margin",
+      severity: managementWorkspace.overview.belowMarginCount > 0 ? "warning" : "info",
+      value: managementWorkspace.overview.belowMarginCount
+    },
+    {
+      description: `Current live-to-lead conversion is ${managementWorkspace.conversions.fromLiveToLead}%.`,
+      id: "lead-conversion",
+      label: "Live-to-lead conversion",
+      severity: managementWorkspace.conversions.fromLiveToLead < 25 ? "warning" : "success",
+      value: managementWorkspace.conversions.fromLiveToLead
+    },
+    {
+      description: `Current won-vs-lost sales win rate is ${managementWorkspace.overview.winRate}%.`,
+      id: "win-rate",
+      label: "Win rate",
+      severity: managementWorkspace.overview.winRate < 40 ? "warning" : "success",
+      value: managementWorkspace.overview.winRate
+    }
+  ];
+
+  const executiveActionableCount = executiveAlerts.filter((alert) => {
+    if (alert.id === "overdue-stock" || alert.id === "below-margin") {
+      return alert.value > 0;
+    }
+
+    return alert.severity === "warning";
+  }).length;
+
   return {
     duePipelineAlerts,
     dueTaskAlerts: dueTaskAlerts.map((task) => ({
@@ -153,6 +194,7 @@ export async function getAlertCenter(companyId: string) {
       title: task.title,
       vehicle: vehicleMap.get(task.watchlist.vehicleId) ?? null
     })),
+    executiveAlerts,
     readyToBuyAlerts,
     searchAlerts,
     summary: {
@@ -160,8 +202,10 @@ export async function getAlertCenter(companyId: string) {
         duePipelineAlerts.length +
         dueTaskAlerts.length +
         searchAlerts.filter((alert) => alert.delta > 0).length +
-        readyToBuyAlerts.length,
+        readyToBuyAlerts.length +
+        executiveActionableCount,
       dueTodayCount: duePipelineAlerts.length + dueTaskAlerts.length,
+      executiveCount: executiveActionableCount,
       readyToBuyCount: readyToBuyAlerts.length,
       searchSignalCount: searchAlerts.filter((alert) => alert.delta > 0).length
     }
@@ -184,6 +228,7 @@ export function buildAlertDigestPreview(input: Awaited<ReturnType<typeof getAler
     `Due today: ${input.summary.dueTodayCount}`,
     `Search signals: ${input.summary.searchSignalCount}`,
     `Ready signals: ${input.summary.readyToBuyCount}`,
+    `Executive escalations: ${input.summary.executiveCount}`,
     ""
   ];
 
@@ -220,6 +265,14 @@ export function buildAlertDigestPreview(input: Awaited<ReturnType<typeof getAler
     for (const alert of input.readyToBuyAlerts.slice(0, 3)) {
       const vehicleLabel = alert.vehicle ? `${alert.vehicle.make} ${alert.vehicle.model}` : "Tracked vehicle";
       lines.push(`- ${vehicleLabel}: ${alert.stage.toLowerCase()}`);
+    }
+    lines.push("");
+  }
+
+  if (input.executiveAlerts.length > 0) {
+    lines.push("Executive escalations:");
+    for (const alert of input.executiveAlerts.slice(0, 4)) {
+      lines.push(`- ${alert.label}: ${alert.description}`);
     }
   }
 
