@@ -6,6 +6,7 @@ import { createWatchlistActivity, deleteWatchlistActivity } from "../activities/
 import { createWatchlistContact, deleteWatchlistContact } from "../contacts/actions";
 import { completeWatchlistTask, createWatchlistTask } from "../tasks/actions";
 import { requireOnboardedSession } from "../../lib/auth";
+import { userRoleLabels, getCompanyTeamRoster } from "../../lib/team";
 import {
   getWatchlistItems,
   getWatchlistPipelineSummary,
@@ -93,9 +94,10 @@ function formatStage(stage: string) {
 export default async function WatchlistPage() {
   const session = await requireOnboardedSession();
   const dueDateLabel = new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(new Date());
-  const [items, pipelineSummary] = await Promise.all([
+  const [items, pipelineSummary, teamRoster] = await Promise.all([
     getWatchlistItems(session.user.companyId!),
-    getWatchlistPipelineSummary(session.user.companyId!)
+    getWatchlistPipelineSummary(session.user.companyId!),
+    getCompanyTeamRoster(session.user.companyId!)
   ]);
 
   return (
@@ -261,7 +263,7 @@ export default async function WatchlistPage() {
                                 <div>
                                   <p className="text-sm font-medium text-[var(--navy)]">{task.title}</p>
                                   <p className="mt-1 text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">
-                                    {task.assigneeName ?? "Unassigned"} |{" "}
+                                    {task.assigneeLabel} |{" "}
                                     {task.dueAt ? task.dueAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "No due date"}
                                   </p>
                                 </div>
@@ -740,10 +742,33 @@ export default async function WatchlistPage() {
                           className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
                           placeholder="Call seller and verify service history"
                         />
+                        <select
+                          name="assigneeRole"
+                          defaultValue={session.user.role}
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                        >
+                          {Object.entries(userRoleLabels).map(([role, label]) => (
+                            <option key={role} value={role}>
+                              {label} queue
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          name="assigneeUserId"
+                          defaultValue={session.user.id}
+                          className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                        >
+                          <option value="">Assign by role only</option>
+                          {teamRoster.map((member) => (
+                            <option key={member.id} value={member.id}>
+                              {(member.name ?? member.email)} - {userRoleLabels[member.role]}
+                            </option>
+                          ))}
+                        </select>
                         <input
                           name="assigneeName"
                           className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
-                          placeholder="Owner or teammate"
+                          placeholder="Optional label if nobody specific is selected"
                         />
                         <input
                           name="dueAt"

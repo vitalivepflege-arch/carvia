@@ -112,6 +112,7 @@ model User {
   role                 UserRole  @default(VIEWER)
   companyId            String?
   company              Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  assignedTasks        WatchlistTask[] @relation("TaskAssignee")
   onboardingCompletedAt DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
@@ -334,6 +335,9 @@ model WatchlistTask {
   watchlistId   String
   watchlist     Watchlist  @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
   title         String
+  assigneeUserId String?
+  assigneeUser   User?     @relation("TaskAssignee", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  assigneeRole  UserRole?
   assigneeName  String?
   dueAt         DateTime?
   status        TaskStatus @default(OPEN)
@@ -348,6 +352,8 @@ model WatchlistTask {
   @@index([watchlistId, createdAt])
   @@index([companyId, origin, status])
   @@index([companyId, automationKey])
+  @@index([companyId, assigneeRole, status])
+  @@index([assigneeUserId, status])
 }
 
 model ProviderCredential {

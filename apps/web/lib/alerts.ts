@@ -2,6 +2,7 @@ import { prisma } from "@carvia/database";
 import { MockVehicleProvider } from "@carvia/providers";
 import { getManagementWorkspace } from "./management";
 import { getSavedSearches } from "./market-search";
+import { buildAssigneeLabel } from "./team";
 
 const mockVehicleProvider = new MockVehicleProvider();
 
@@ -56,6 +57,13 @@ export async function getAlertCenter(companyId: string) {
       orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
       take: 6,
       include: {
+        assigneeUser: {
+          select: {
+            email: true,
+            name: true,
+            role: true
+          }
+        },
         watchlist: {
           select: {
             id: true,
@@ -187,6 +195,12 @@ export async function getAlertCenter(companyId: string) {
     duePipelineAlerts,
     dueTaskAlerts: dueTaskAlerts.map((task) => ({
       assigneeName: task.assigneeName,
+      assigneeLabel: buildAssigneeLabel({
+        assigneeName: task.assigneeName,
+        assigneeRole: task.assigneeRole,
+        assigneeUser: task.assigneeUser
+      }),
+      assigneeRole: task.assigneeRole,
       dueAt: task.dueAt,
       id: task.id,
       origin: task.origin,
@@ -257,7 +271,7 @@ export function buildAlertDigestPreview(input: Awaited<ReturnType<typeof getAler
     lines.push("Due follow-up tasks:");
     for (const task of input.dueTaskAlerts.slice(0, 3)) {
       const vehicleLabel = task.vehicle ? `${task.vehicle.make} ${task.vehicle.model}` : "Tracked vehicle";
-      lines.push(`- ${task.title}: ${vehicleLabel} | ${task.priority.toLowerCase()} priority${task.origin === "AUTOMATION" ? " | automation" : ""}`);
+      lines.push(`- ${task.title}: ${vehicleLabel} | ${task.priority.toLowerCase()} priority | ${task.assigneeLabel}${task.origin === "AUTOMATION" ? " | automation" : ""}`);
     }
     lines.push("");
   }

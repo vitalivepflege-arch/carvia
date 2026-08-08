@@ -1,10 +1,18 @@
 import { prisma } from "@carvia/database";
+import { buildAssigneeLabel } from "./team";
 
 export async function getTaskWorkspace(companyId: string) {
   const tasks = await prisma.watchlistTask.findMany({
     where: { companyId },
     orderBy: [{ status: "asc" }, { dueAt: "asc" }, { createdAt: "desc" }],
     include: {
+      assigneeUser: {
+        select: {
+          email: true,
+          name: true,
+          role: true
+        }
+      },
       watchlist: {
         select: {
           id: true,
@@ -39,6 +47,11 @@ export async function getTaskWorkspace(companyId: string) {
 
   return tasks.map((task) => ({
     ...task,
+    assigneeLabel: buildAssigneeLabel({
+      assigneeName: task.assigneeName,
+      assigneeRole: task.assigneeRole,
+      assigneeUser: task.assigneeUser
+    }),
     vehicle: vehicleMap.get(task.watchlist.vehicleId) ?? null
   }));
 }
@@ -56,6 +69,7 @@ export async function getTaskWorkspaceSummary(companyId: string) {
   const tasks = await prisma.watchlistTask.findMany({
     where: { companyId },
     select: {
+      assigneeRole: true,
       dueAt: true,
       origin: true,
       status: true
@@ -67,11 +81,17 @@ export async function getTaskWorkspaceSummary(companyId: string) {
   const doneTasks = tasks.filter((task) => task.status === "DONE");
   const automatedOpenTasks = openTasks.filter((task) => task.origin === "AUTOMATION");
   const overdueTasks = openTasks.filter((task) => task.dueAt && task.dueAt < today);
+  const buyerQueueCount = openTasks.filter((task) => task.assigneeRole === "BUYER").length;
+  const salesQueueCount = openTasks.filter((task) => task.assigneeRole === "SALES").length;
+  const adminQueueCount = openTasks.filter((task) => task.assigneeRole === "ADMIN" || task.assigneeRole === "OWNER").length;
 
   return {
+    adminQueueCount,
     automatedOpenCount: automatedOpenTasks.length,
+    buyerQueueCount,
     doneCount: doneTasks.length,
     openCount: openTasks.length,
-    overdueCount: overdueTasks.length
+    overdueCount: overdueTasks.length,
+    salesQueueCount
   };
 }

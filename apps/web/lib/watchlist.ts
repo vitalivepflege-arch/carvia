@@ -1,4 +1,5 @@
 import { prisma } from "@carvia/database";
+import { buildAssigneeLabel } from "./team";
 
 export const watchlistStageOrder = ["NEW", "REVIEWING", "NEGOTIATING", "READY_TO_BUY", "PASSED"] as const;
 
@@ -110,6 +111,14 @@ export async function getWatchlistItems(companyId: string) {
         watchlistId: true,
         title: true,
         assigneeName: true,
+        assigneeRole: true,
+        assigneeUser: {
+          select: {
+            email: true,
+            name: true,
+            role: true
+          }
+        },
         dueAt: true,
         createdAt: true
       }
@@ -242,7 +251,14 @@ export async function getWatchlistItems(companyId: string) {
         : null,
       contacts: item.contacts,
       recentActivities: item.recentActivities,
-      openTasks: item.openTasks,
+      openTasks: item.openTasks.map((task) => ({
+        ...task,
+        assigneeLabel: buildAssigneeLabel({
+          assigneeName: task.assigneeName,
+          assigneeRole: task.assigneeRole,
+          assigneeUser: task.assigneeUser
+        })
+      })),
       vehicle: {
         ...item.vehicle,
         priceGross: item.vehicle.priceGross ? Number(item.vehicle.priceGross) : null

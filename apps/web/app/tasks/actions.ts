@@ -7,6 +7,8 @@ import { requireOnboardedSession } from "../../lib/auth";
 
 const createTaskSchema = z.object({
   assigneeName: z.string().trim().max(120).optional(),
+  assigneeRole: z.enum(["OWNER", "ADMIN", "BUYER", "SALES", "VIEWER"]).optional(),
+  assigneeUserId: z.string().trim().optional(),
   dueAt: z.string().optional(),
   title: z.string().trim().min(3).max(180),
   watchlistId: z.string().min(1)
@@ -34,6 +36,8 @@ export async function createWatchlistTask(formData: FormData) {
   const session = await requireOnboardedSession();
   const parsed = createTaskSchema.parse({
     assigneeName: readOptionalString(formData, "assigneeName"),
+    assigneeRole: readOptionalString(formData, "assigneeRole"),
+    assigneeUserId: readOptionalString(formData, "assigneeUserId"),
     dueAt: readOptionalString(formData, "dueAt"),
     title: formData.get("title"),
     watchlistId: formData.get("watchlistId")
@@ -50,9 +54,31 @@ export async function createWatchlistTask(formData: FormData) {
     return;
   }
 
+  const assigneeUser = parsed.assigneeUserId
+    ? await prisma.user.findFirst({
+        where: {
+          companyId: session.user.companyId!,
+          id: parsed.assigneeUserId
+        },
+        select: {
+          email: true,
+          id: true,
+          name: true,
+          role: true
+        }
+      })
+    : null;
+
   await prisma.watchlistTask.create({
     data: {
-      assigneeName: parsed.assigneeName || session.user.name || null,
+      assigneeName:
+        assigneeUser?.name ??
+        assigneeUser?.email ??
+        parsed.assigneeName ??
+        session.user.name ??
+        null,
+      assigneeRole: assigneeUser?.role ?? parsed.assigneeRole ?? session.user.role ?? null,
+      assigneeUserId: assigneeUser?.id ?? null,
       companyId: session.user.companyId!,
       dueAt: parsed.dueAt ? new Date(`${parsed.dueAt}T00:00:00.000Z`) : null,
       title: parsed.title,

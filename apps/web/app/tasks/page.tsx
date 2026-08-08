@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, StatusPill } from "@carvia/ui";
 import { requireOnboardedSession } from "../../lib/auth";
+import { userRoleLabels } from "../../lib/team";
 import { getTaskWorkspace, getTaskWorkspaceSummary } from "../../lib/tasks";
 import { watchlistStageLabels } from "../../lib/watchlist";
 import { completeWatchlistTask, deleteWatchlistTask, reopenWatchlistTask } from "./actions";
@@ -76,6 +77,19 @@ export default async function TasksPage() {
           ))}
         </div>
 
+        <div className="grid gap-4 md:grid-cols-3">
+          {[
+            { label: "Buyer Queue", value: String(summary.buyerQueueCount), delta: "Acquisition and next-action work" },
+            { label: "Sales Queue", value: String(summary.salesQueueCount), delta: "Lead and test-drive follow-up" },
+            { label: "Admin Queue", value: String(summary.adminQueueCount), delta: "Closing, payout, and handover work" }
+          ].map((metric) => (
+            <Card key={metric.label} title={metric.label}>
+              <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
+              <p className="mt-2 text-sm text-[var(--foreground-muted)]">{metric.delta}</p>
+            </Card>
+          ))}
+        </div>
+
         <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
           <Card title="Open Follow-ups">
             <div className="mt-5 space-y-4">
@@ -94,6 +108,7 @@ export default async function TasksPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium text-[var(--navy)]">{task.title}</p>
                           {task.origin === "AUTOMATION" ? <StatusPill tone="info">Automation</StatusPill> : null}
+                          {task.assigneeRole ? <StatusPill tone="warning">{userRoleLabels[task.assigneeRole]}</StatusPill> : null}
                         </div>
                         <p className="mt-1 text-sm text-[var(--foreground-muted)]">
                           {task.vehicle ? `${task.vehicle.make} ${task.vehicle.model}` : "Tracked vehicle"} |{" "}
@@ -109,7 +124,7 @@ export default async function TasksPage() {
                     </div>
 
                     <p className="mt-3 text-sm text-[var(--foreground)]">
-                      Owner: {task.assigneeName ?? "Unassigned"}
+                      Owner: {task.assigneeLabel}
                     </p>
 
                     <div className="mt-4 flex flex-wrap gap-3">
@@ -152,6 +167,7 @@ export default async function TasksPage() {
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-medium text-[var(--navy)]">{task.title}</p>
                           {task.origin === "AUTOMATION" ? <StatusPill tone="info">Automation</StatusPill> : null}
+                          {task.assigneeRole ? <StatusPill tone="warning">{userRoleLabels[task.assigneeRole]}</StatusPill> : null}
                         </div>
                         <p className="mt-1 text-sm text-[var(--foreground-muted)]">
                           {task.vehicle ? `${task.vehicle.make} ${task.vehicle.model}` : "Tracked vehicle"} |{" "}

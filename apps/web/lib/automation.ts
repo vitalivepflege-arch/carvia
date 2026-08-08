@@ -5,6 +5,7 @@ function startOfDay(date: Date) {
 }
 
 type AutomationTaskRule = {
+  assigneeRole: "ADMIN" | "BUYER" | "OWNER" | "SALES";
   dueAt: Date | null;
   key: string;
   rule: string;
@@ -37,6 +38,39 @@ async function logAutomationActivity(input: {
 }
 
 async function upsertAutomationTask(companyId: string, watchlistId: string, rule: AutomationTaskRule): Promise<AutomationTaskOutcome> {
+  const matchingAssignee = await prisma.user.findFirst({
+    where: {
+      companyId,
+      role: rule.assigneeRole
+    },
+    orderBy: [{ name: "asc" }, { email: "asc" }],
+    select: {
+      email: true,
+      id: true,
+      name: true,
+      role: true
+    }
+  });
+
+  const fallbackAssignee = matchingAssignee
+    ? null
+    : await prisma.user.findFirst({
+        where: {
+          companyId,
+          role: {
+            in: ["OWNER", "ADMIN"]
+          }
+        },
+        orderBy: [{ role: "asc" }, { name: "asc" }, { email: "asc" }],
+        select: {
+          email: true,
+          id: true,
+          name: true,
+          role: true
+        }
+      });
+
+  const assignee = matchingAssignee ?? fallbackAssignee;
   const existingTask = await prisma.watchlistTask.findFirst({
     where: {
       automationKey: rule.key,
@@ -49,6 +83,9 @@ async function upsertAutomationTask(companyId: string, watchlistId: string, rule
   if (!existingTask) {
     const task = await prisma.watchlistTask.create({
       data: {
+        assigneeName: assignee?.name ?? assignee?.email ?? null,
+        assigneeRole: assignee?.role ?? rule.assigneeRole,
+        assigneeUserId: assignee?.id ?? null,
         automationKey: rule.key,
         automationRule: rule.rule,
         companyId,
@@ -65,6 +102,9 @@ async function upsertAutomationTask(companyId: string, watchlistId: string, rule
     const task = await prisma.watchlistTask.update({
       where: { id: existingTask.id },
       data: {
+        assigneeName: assignee?.name ?? assignee?.email ?? existingTask.assigneeName,
+        assigneeRole: assignee?.role ?? rule.assigneeRole,
+        assigneeUserId: assignee?.id ?? null,
         completedAt: null,
         dueAt: rule.dueAt,
         status: "OPEN",
@@ -81,6 +121,9 @@ async function upsertAutomationTask(companyId: string, watchlistId: string, rule
     await prisma.watchlistTask.update({
       where: { id: existingTask.id },
       data: {
+        assigneeName: assignee?.name ?? assignee?.email ?? existingTask.assigneeName,
+        assigneeRole: assignee?.role ?? rule.assigneeRole,
+        assigneeUserId: assignee?.id ?? null,
         dueAt: rule.dueAt,
         title: rule.title
       }
@@ -143,6 +186,7 @@ function buildAutomationRules(item: {
   const daysInStock = Math.floor((now.getTime() - item.createdAt.getTime()) / (1000 * 60 * 60 * 24));
   if (targetDays && daysInStock > targetDays) {
     rules.push({
+      assigneeRole: "BUYER",
       dueAt: today,
       key: `${item.id}:overdue-stock`,
       rule: "OVERDUE_STOCK_REVIEW",
@@ -152,6 +196,7 @@ function buildAutomationRules(item: {
 
   if (item.retailStatus === "LIVE" && item.salesStatus === "NONE" && item.leadCount > 0) {
     rules.push({
+      assigneeRole: "SALES",
       dueAt: today,
       key: `${item.id}:lead-follow-up`,
       rule: "LIVE_LEAD_FOLLOW_UP",
@@ -161,6 +206,7 @@ function buildAutomationRules(item: {
 
   if (item.salesStatus === "TEST_DRIVE_SCHEDULED" && item.testDriveScheduledAt) {
     rules.push({
+      assigneeRole: "SALES",
       dueAt: item.testDriveScheduledAt,
       key: `${item.id}:test-drive`,
       rule: "TEST_DRIVE_PREP",
@@ -170,6 +216,7 @@ function buildAutomationRules(item: {
 
   if (item.salesStatus === "WON") {
     rules.push({
+      assigneeRole: "ADMIN",
       dueAt: today,
       key: `${item.id}:handover-close`,
       rule: "WON_DEAL_HANDOVER",
@@ -179,6 +226,7 @@ function buildAutomationRules(item: {
 
   if (item.nextActionAt && item.nextActionAt <= today) {
     rules.push({
+      assigneeRole: "BUYER",
       dueAt: item.nextActionAt,
       key: `${item.id}:due-next-action`,
       rule: "DUE_NEXT_ACTION",

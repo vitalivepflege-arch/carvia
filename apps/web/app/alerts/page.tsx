@@ -7,6 +7,7 @@ import {
   getNotificationPreference
 } from "../../lib/alerts";
 import { requireOnboardedSession } from "../../lib/auth";
+import { userRoleLabels } from "../../lib/team";
 import { saveNotificationPreference, sendTestDigest } from "./actions";
 
 const severityTone = {
@@ -307,6 +308,7 @@ export default async function AlertsPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-medium text-[var(--navy)]">{task.title}</p>
                         {task.origin === "AUTOMATION" ? <StatusPill tone="info">Automation</StatusPill> : null}
+                        {task.assigneeRole ? <StatusPill tone="warning">{userRoleLabels[task.assigneeRole]}</StatusPill> : null}
                       </div>
                       <p className="mt-1 text-sm text-[var(--foreground-muted)]">
                         {task.vehicle ? `${task.vehicle.make} ${task.vehicle.model}` : "Tracked vehicle"} | {formatStage(task.stage)}
@@ -315,7 +317,7 @@ export default async function AlertsPage() {
                     <StatusPill tone={priorityTone[task.priority]}>{task.priority} priority</StatusPill>
                   </div>
                   <p className="mt-3 text-sm text-[var(--foreground)]">
-                    {task.assigneeName ?? "Unassigned"} |{" "}
+                    {task.assigneeLabel} |{" "}
                     {task.dueAt ? task.dueAt.toLocaleDateString("en-US", { dateStyle: "long" }) : "No due date"}
                   </p>
                   <Link
