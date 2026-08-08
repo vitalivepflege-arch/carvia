@@ -23,10 +23,10 @@ const activityTone = {
 export default async function ActivitiesPage() {
   const session = await requireOnboardedSession();
   const activities = await getActivityWorkspace(session.user.companyId!);
-  const today = new Date("2026-08-06T00:00:00.000Z");
+  const today = new Date();
   const thisWeekCount = activities.filter((activity) => activity.happenedAt >= new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000)).length;
   const callCount = activities.filter((activity) => activity.type === "CALL").length;
-  const documentCount = activities.filter((activity) => activity.type === "DOCUMENT").length;
+  const automationCount = activities.filter((activity) => activity.createdByName === "Carvia Automation").length;
 
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#faf8f3_0%,#eff0eb_100%)] px-6 py-10">
@@ -59,8 +59,8 @@ export default async function ActivitiesPage() {
           {[
             { label: "Entries", value: String(activities.length), delta: "Logged deal interactions" },
             { label: "This Week", value: String(thisWeekCount), delta: "Recent activity volume" },
-            { label: "Calls", value: String(callCount), delta: "Phone touchpoints" },
-            { label: "Documents", value: String(documentCount), delta: "Paperwork and verification steps" }
+            { label: "Automation", value: String(automationCount), delta: "System-generated operating history" },
+            { label: "Calls", value: String(callCount), delta: "Phone touchpoints" }
           ].map((metric) => (
             <Card key={metric.label} title={metric.label}>
               <p className="mt-4 text-3xl font-semibold text-[var(--navy)]">{metric.value}</p>
@@ -86,6 +86,7 @@ export default async function ActivitiesPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <StatusPill tone={activityTone[activity.type]}>{activityTypeLabels[activity.type]}</StatusPill>
                         <StatusPill tone={priorityTone[activity.watchlist.priority]}>{activity.watchlist.priority}</StatusPill>
+                        {activity.createdByName === "Carvia Automation" ? <StatusPill tone="info">Automation</StatusPill> : null}
                       </div>
                       <p className="mt-3 font-medium text-[var(--navy)]">{activity.summary}</p>
                       <p className="mt-1 text-sm text-[var(--foreground-muted)]">

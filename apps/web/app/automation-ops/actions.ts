@@ -11,10 +11,12 @@ export async function runAutomationMaintenance() {
   revalidatePath("/");
   revalidatePath("/alerts");
   revalidatePath("/automation-ops");
+  revalidatePath("/activities");
   revalidatePath("/inventory");
   revalidatePath("/management");
   revalidatePath("/pipeline");
   revalidatePath("/retail");
   revalidatePath("/sales");
+  revalidatePath("/tasks");
   revalidatePath("/watchlist");
 }

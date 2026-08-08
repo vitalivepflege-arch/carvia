@@ -11,7 +11,32 @@ type AutomationTaskRule = {
   title: string;
 };
 
-async function upsertAutomationTask(companyId: string, watchlistId: string, rule: AutomationTaskRule) {
+type AutomationTaskOutcome =
+  | { kind: "created"; taskId: string }
+  | { kind: "reopened"; taskId: string }
+  | { kind: "kept"; taskId: string };
+
+async function logAutomationActivity(input: {
+  companyId: string;
+  details?: string;
+  happenedAt: Date;
+  summary: string;
+  watchlistId: string;
+}) {
+  await prisma.watchlistActivity.create({
+    data: {
+      companyId: input.companyId,
+      createdByName: "Carvia Automation",
+      details: input.details,
+      happenedAt: input.happenedAt,
+      summary: input.summary,
+      type: "NOTE",
+      watchlistId: input.watchlistId
+    }
+  });
+}
+
+async function upsertAutomationTask(companyId: string, watchlistId: string, rule: AutomationTaskRule): Promise<AutomationTaskOutcome> {
   const existingTask = await prisma.watchlistTask.findFirst({
     where: {
       automationKey: rule.key,
@@ -22,7 +47,7 @@ async function upsertAutomationTask(companyId: string, watchlistId: string, rule
   });
 
   if (!existingTask) {
-    await prisma.watchlistTask.create({
+    const task = await prisma.watchlistTask.create({
       data: {
         automationKey: rule.key,
         automationRule: rule.rule,
@@ -33,11 +58,11 @@ async function upsertAutomationTask(companyId: string, watchlistId: string, rule
         watchlistId
       }
     });
-    return "created";
+    return { kind: "created", taskId: task.id };
   }
 
   if (existingTask.status === "DONE") {
-    await prisma.watchlistTask.update({
+    const task = await prisma.watchlistTask.update({
       where: { id: existingTask.id },
       data: {
         completedAt: null,
@@ -46,7 +71,7 @@ async function upsertAutomationTask(companyId: string, watchlistId: string, rule
         title: rule.title
       }
     });
-    return "reopened";
+    return { kind: "reopened", taskId: task.id };
   }
 
   const dueAtChanged =
@@ -62,7 +87,7 @@ async function upsertAutomationTask(companyId: string, watchlistId: string, rule
     });
   }
 
-  return "kept";
+  return { kind: "kept", taskId: existingTask.id };
 }
 
 async function resolveInactiveAutomationTasks(companyId: string, activeKeys: Set<string>) {
@@ -74,7 +99,10 @@ async function resolveInactiveAutomationTasks(companyId: string, activeKeys: Set
     },
     select: {
       automationKey: true,
-      id: true
+      automationRule: true,
+      id: true,
+      title: true,
+      watchlistId: true
     }
   });
 
@@ -83,7 +111,7 @@ async function resolveInactiveAutomationTasks(companyId: string, activeKeys: Set
     .map((task) => task.id);
 
   if (staleTaskIds.length === 0) {
-    return 0;
+    return [];
   }
 
   await prisma.watchlistTask.updateMany({
@@ -98,7 +126,7 @@ async function resolveInactiveAutomationTasks(companyId: string, activeKeys: Set
     }
   });
 
-  return staleTaskIds.length;
+  return staleTasks.filter((task) => staleTaskIds.includes(task.id));
 }
 
 function buildAutomationRules(item: {
@@ -260,6 +288,7 @@ export async function runAutomationRules(companyId: string) {
   let escalatedCount = 0;
   let createdTaskCount = 0;
   let reopenedTaskCount = 0;
+  let resolvedTaskCount = 0;
   const previewLines: string[] = [];
   const activeAutomationKeys = new Set<string>();
 
@@ -306,16 +335,40 @@ export async function runAutomationRules(companyId: string) {
     for (const rule of taskRules) {
       activeAutomationKeys.add(rule.key);
       const outcome = await upsertAutomationTask(companyId, item.id, rule);
-      if (outcome === "created") {
+      if (outcome.kind === "created") {
         createdTaskCount += 1;
+        await logAutomationActivity({
+          companyId,
+          details: `Rule ${rule.rule} created task "${rule.title}"${rule.dueAt ? ` due ${rule.dueAt.toLocaleDateString("en-US", { dateStyle: "long" })}` : ""}.`,
+          happenedAt: now,
+          summary: `Automation created follow-up task: ${rule.title}`,
+          watchlistId: item.id
+        });
       }
-      if (outcome === "reopened") {
+      if (outcome.kind === "reopened") {
         reopenedTaskCount += 1;
+        await logAutomationActivity({
+          companyId,
+          details: `Rule ${rule.rule} reopened task "${rule.title}" because the trigger condition became active again.`,
+          happenedAt: now,
+          summary: `Automation reopened follow-up task: ${rule.title}`,
+          watchlistId: item.id
+        });
       }
     }
   }
 
-  const resolvedTaskCount = await resolveInactiveAutomationTasks(companyId, activeAutomationKeys);
+  const resolvedTasks = await resolveInactiveAutomationTasks(companyId, activeAutomationKeys);
+  resolvedTaskCount = resolvedTasks.length;
+  for (const task of resolvedTasks) {
+    await logAutomationActivity({
+      companyId,
+      details: `Rule ${task.automationRule ?? "UNKNOWN_RULE"} resolved task "${task.title}" because the triggering condition is no longer active.`,
+      happenedAt: now,
+      summary: `Automation resolved follow-up task: ${task.title}`,
+      watchlistId: task.watchlistId
+    });
+  }
 
   previewLines.push(`Automation run on ${now.toLocaleString("en-US")}`);
   previewLines.push(`Updated records: ${updatedCount}`);

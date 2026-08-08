@@ -189,6 +189,7 @@ export async function getAlertCenter(companyId: string) {
       assigneeName: task.assigneeName,
       dueAt: task.dueAt,
       id: task.id,
+      origin: task.origin,
       priority: task.watchlist.priority,
       stage: task.watchlist.stage,
       title: task.title,
@@ -204,6 +205,7 @@ export async function getAlertCenter(companyId: string) {
         searchAlerts.filter((alert) => alert.delta > 0).length +
         readyToBuyAlerts.length +
         executiveActionableCount,
+      automatedTaskCount: dueTaskAlerts.filter((task) => task.origin === "AUTOMATION").length,
       dueTodayCount: duePipelineAlerts.length + dueTaskAlerts.length,
       executiveCount: executiveActionableCount,
       readyToBuyCount: readyToBuyAlerts.length,
@@ -255,7 +257,7 @@ export function buildAlertDigestPreview(input: Awaited<ReturnType<typeof getAler
     lines.push("Due follow-up tasks:");
     for (const task of input.dueTaskAlerts.slice(0, 3)) {
       const vehicleLabel = task.vehicle ? `${task.vehicle.make} ${task.vehicle.model}` : "Tracked vehicle";
-      lines.push(`- ${task.title}: ${vehicleLabel} | ${task.priority.toLowerCase()} priority`);
+      lines.push(`- ${task.title}: ${vehicleLabel} | ${task.priority.toLowerCase()} priority${task.origin === "AUTOMATION" ? " | automation" : ""}`);
     }
     lines.push("");
   }
