@@ -18,6 +18,23 @@ const updateTeamRoleSchema = z.object({
   userId: z.string().min(1)
 });
 
+const updateTaskAssignmentSchema = z.object({
+  assigneeRole: z.enum(["OWNER", "ADMIN", "BUYER", "SALES", "VIEWER"]),
+  assigneeUserId: z.string().optional(),
+  taskId: z.string().min(1)
+});
+
+const bulkTaskAssignmentSchema = z.object({
+  fromRole: z.enum(["OWNER", "ADMIN", "BUYER", "SALES", "VIEWER"]),
+  toRole: z.enum(["OWNER", "ADMIN", "BUYER", "SALES", "VIEWER"]),
+  toUserId: z.string().optional()
+});
+
+function readOptionalString(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : undefined;
+}
+
 function revalidateTeamSurfaces() {
   revalidatePath("/");
   revalidatePath("/alerts");
@@ -99,6 +116,91 @@ export async function updateTeamMemberRole(formData: FormData) {
     where: { id: member.id },
     data: {
       role: parsed.role
+    }
+  });
+
+  revalidateTeamSurfaces();
+}
+
+export async function updateTaskAssignment(formData: FormData) {
+  const session = await requireTeamManager();
+  const parsed = updateTaskAssignmentSchema.parse({
+    assigneeRole: formData.get("assigneeRole"),
+    assigneeUserId: readOptionalString(formData, "assigneeUserId"),
+    taskId: formData.get("taskId")
+  });
+
+  const task = await prisma.watchlistTask.findFirst({
+    where: {
+      companyId: session.user.companyId!,
+      id: parsed.taskId
+    }
+  });
+
+  if (!task) {
+    return;
+  }
+
+  const assigneeUser = parsed.assigneeUserId
+    ? await prisma.user.findFirst({
+        where: {
+          companyId: session.user.companyId!,
+          id: parsed.assigneeUserId
+        },
+        select: {
+          email: true,
+          id: true,
+          name: true,
+          role: true
+        }
+      })
+    : null;
+
+  await prisma.watchlistTask.update({
+    where: { id: task.id },
+    data: {
+      assigneeName: assigneeUser?.name ?? assigneeUser?.email ?? task.assigneeName,
+      assigneeRole: assigneeUser?.role ?? parsed.assigneeRole,
+      assigneeUserId: assigneeUser?.id ?? null
+    }
+  });
+
+  revalidateTeamSurfaces();
+}
+
+export async function bulkAssignRoleQueue(formData: FormData) {
+  const session = await requireTeamManager();
+  const parsed = bulkTaskAssignmentSchema.parse({
+    fromRole: formData.get("fromRole"),
+    toRole: formData.get("toRole"),
+    toUserId: readOptionalString(formData, "toUserId")
+  });
+
+  const assigneeUser = parsed.toUserId
+    ? await prisma.user.findFirst({
+        where: {
+          companyId: session.user.companyId!,
+          id: parsed.toUserId
+        },
+        select: {
+          email: true,
+          id: true,
+          name: true,
+          role: true
+        }
+      })
+    : null;
+
+  await prisma.watchlistTask.updateMany({
+    where: {
+      assigneeRole: parsed.fromRole,
+      companyId: session.user.companyId!,
+      status: "OPEN"
+    },
+    data: {
+      assigneeName: assigneeUser?.name ?? assigneeUser?.email ?? null,
+      assigneeRole: assigneeUser?.role ?? parsed.toRole,
+      assigneeUserId: assigneeUser?.id ?? null
     }
   });
 

@@ -60,14 +60,43 @@ export async function getTeamWorkspace(companyId: string) {
         companyId,
         status: "OPEN"
       },
-      select: {
-        assigneeRole: true,
-        assigneeUserId: true,
-        dueAt: true,
-        origin: true
+      orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
+      include: {
+        assigneeUser: {
+          select: {
+            email: true,
+            name: true,
+            role: true
+          }
+        },
+        watchlist: {
+          select: {
+            id: true,
+            priority: true,
+            stage: true,
+            vehicleId: true
+          }
+        }
       }
     })
   ]);
+
+  const vehicleIds = [...new Set(openTasks.map((task) => task.watchlist.vehicleId))];
+  const vehicles = vehicleIds.length
+    ? await prisma.vehicle.findMany({
+        where: {
+          id: {
+            in: vehicleIds
+          }
+        },
+        select: {
+          id: true,
+          make: true,
+          model: true
+        }
+      })
+    : [];
+  const vehicleMap = new Map(vehicles.map((vehicle) => [vehicle.id, vehicle]));
 
   const today = new Date(new Date().toDateString());
   const taskCountsByUser = new Map<string, { automation: number; open: number; overdue: number }>();
@@ -116,6 +145,15 @@ export async function getTeamWorkspace(companyId: string) {
       teamCount: teamMembers.length
     },
     roleSummary,
+    taskBoard: openTasks.slice(0, 12).map((task) => ({
+      ...task,
+      assigneeLabel: buildAssigneeLabel({
+        assigneeName: task.assigneeName,
+        assigneeRole: task.assigneeRole,
+        assigneeUser: task.assigneeUser
+      }),
+      vehicle: vehicleMap.get(task.watchlist.vehicleId) ?? null
+    })),
     teamMembers: teamMembers.map((member) => ({
       ...member,
       workload: taskCountsByUser.get(member.id) ?? {

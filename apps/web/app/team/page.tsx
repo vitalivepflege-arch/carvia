@@ -1,7 +1,14 @@
 import { Card, StatusPill } from "@carvia/ui";
 import { requireOnboardedSession } from "../../lib/auth";
 import { getTeamWorkspace, userRoleLabels } from "../../lib/team";
-import { createTeamMember, updateTeamMemberRole } from "./actions";
+import { watchlistStageLabels } from "../../lib/watchlist";
+import { bulkAssignRoleQueue, createTeamMember, updateTaskAssignment, updateTeamMemberRole } from "./actions";
+
+const priorityTone = {
+  HIGH: "danger",
+  LOW: "info",
+  MEDIUM: "warning"
+} as const;
 
 export default async function TeamPage() {
   const session = await requireOnboardedSession();
@@ -106,6 +113,138 @@ export default async function TeamPage() {
           </Card>
 
           <div className="space-y-6">
+            <Card title="Assignment Control">
+              <div className="mt-5 space-y-4">
+                <p className="text-sm text-[var(--foreground-muted)]">
+                  Move live workload between queues or named teammates when one lane gets overloaded or a shift changes during the day.
+                </p>
+                {canManageTeam ? (
+                  <>
+                    <form action={bulkAssignRoleQueue} className="grid gap-4 rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                      <p className="text-sm font-medium text-[var(--navy)]">Bulk rebalance a role queue</p>
+                      <select
+                        name="fromRole"
+                        defaultValue="BUYER"
+                        className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                      >
+                        {Object.entries(userRoleLabels).map(([role, label]) => (
+                          <option key={role} value={role}>
+                            From {label}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        name="toRole"
+                        defaultValue="SALES"
+                        className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                      >
+                        {Object.entries(userRoleLabels).map(([role, label]) => (
+                          <option key={role} value={role}>
+                            To {label}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        name="toUserId"
+                        defaultValue=""
+                        className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                      >
+                        <option value="">Move to target role queue only</option>
+                        {workspace.teamMembers.map((member) => (
+                          <option key={member.id} value={member.id}>
+                            {(member.name ?? member.email)} - {userRoleLabels[member.role]}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="submit"
+                        className="rounded-full bg-[var(--navy)] px-4 py-2 text-sm font-semibold text-white"
+                      >
+                        Rebalance queue
+                      </button>
+                    </form>
+
+                    <div className="space-y-3">
+                      {workspace.taskBoard.length === 0 ? (
+                        <div className="rounded-3xl bg-[var(--surface-muted)] p-5">
+                          <p className="font-medium text-[var(--navy)]">No open tasks to rebalance</p>
+                          <p className="mt-2 text-sm text-[var(--foreground-muted)]">
+                            As soon as Carvia or the team creates follow-up work, it will appear here for reassignment control.
+                          </p>
+                        </div>
+                      ) : (
+                        workspace.taskBoard.map((task) => (
+                          <div key={task.id} className="rounded-3xl border border-[var(--border)] bg-[var(--surface-muted)] p-4">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="font-medium text-[var(--navy)]">{task.title}</p>
+                                  {task.origin === "AUTOMATION" ? <StatusPill tone="info">Automation</StatusPill> : null}
+                                  {task.assigneeRole ? <StatusPill tone="warning">{userRoleLabels[task.assigneeRole]}</StatusPill> : null}
+                                </div>
+                                <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                                  {task.vehicle ? `${task.vehicle.make} ${task.vehicle.model}` : "Tracked vehicle"} |{" "}
+                                  {watchlistStageLabels[task.watchlist.stage]}
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <StatusPill tone={priorityTone[task.watchlist.priority]}>{task.watchlist.priority}</StatusPill>
+                                <StatusPill tone={task.dueAt && task.dueAt < new Date(new Date().toDateString()) ? "danger" : "info"}>
+                                  {task.dueAt ? task.dueAt.toLocaleDateString("en-US", { dateStyle: "medium" }) : "No due date"}
+                                </StatusPill>
+                              </div>
+                            </div>
+
+                            <p className="mt-3 text-sm text-[var(--foreground)]">Current owner: {task.assigneeLabel}</p>
+
+                            <form action={updateTaskAssignment} className="mt-4 grid gap-3 md:grid-cols-[0.9fr_1.1fr_auto]">
+                              <input type="hidden" name="taskId" value={task.id} />
+                              <select
+                                name="assigneeRole"
+                                defaultValue={task.assigneeRole ?? "BUYER"}
+                                className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                              >
+                                {Object.entries(userRoleLabels).map(([role, label]) => (
+                                  <option key={role} value={role}>
+                                    {label}
+                                  </option>
+                                ))}
+                              </select>
+                              <select
+                                name="assigneeUserId"
+                                defaultValue={task.assigneeUserId ?? ""}
+                                className="w-full rounded-2xl border border-[var(--border)] bg-white px-4 py-3 text-sm text-[var(--navy)]"
+                              >
+                                <option value="">Assign to role queue only</option>
+                                {workspace.teamMembers.map((member) => (
+                                  <option key={member.id} value={member.id}>
+                                    {(member.name ?? member.email)} - {userRoleLabels[member.role]}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="submit"
+                                className="rounded-full bg-[var(--navy)] px-4 py-2 text-sm font-semibold text-white"
+                              >
+                                Reassign
+                              </button>
+                            </form>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="rounded-3xl bg-[var(--surface-muted)] p-5">
+                    <p className="font-medium text-[var(--navy)]">Assignment changes need Owner or Admin access</p>
+                    <p className="mt-2 text-sm text-[var(--foreground-muted)]">
+                      You can inspect workload from this page, but queue rebalancing is limited to tenant managers.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </Card>
+
             <Card title="Create Team Member">
               <div className="mt-5 space-y-4">
                 <p className="text-sm text-[var(--foreground-muted)]">
