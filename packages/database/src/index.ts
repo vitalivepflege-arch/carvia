@@ -1,5 +1,12 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "./generated/prisma/client";
+
+if (!process.env.DATABASE_URL) {
+  const currentDir = path.dirname(fileURLToPath(import.meta.url));
+  process.loadEnvFile(path.resolve(currentDir, "../../../.env"));
+}
 
 declare global {
   var __carviaPrisma__: PrismaClient | undefined;
