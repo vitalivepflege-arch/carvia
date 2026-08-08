@@ -6,6 +6,7 @@ export const shellSections = [
   { label: "Market Search", value: "Opportunity Scan", href: "/market-search" },
   { label: "Reports", value: "Funnel Health", href: "/reports" },
   { label: "Management", value: "Executive View", href: "/management" },
+  { label: "Team", value: "Tenant People", href: "/team" },
   { label: "Automation", value: "Rule Engine", href: "/automation-ops" },
   { label: "Pipeline", value: "Board View", href: "/pipeline" },
   { label: "Sync Ops", value: "Integration Runs", href: "/sync-ops" },
