@@ -3,7 +3,11 @@ import { auth } from "./auth";
 
 const publicPaths = new Set(["/login", "/register"]);
 
-export default auth((request) => {
+const demoProxy = () => {
+  return NextResponse.next();
+};
+
+const authenticatedProxy = auth((request) => {
   const isAuthenticated = Boolean(request.auth?.user);
   const pathname = request.nextUrl.pathname;
 
@@ -33,6 +37,8 @@ export default auth((request) => {
 
   return NextResponse.next();
 });
+
+export default process.env.SEED_DEMO_DATA === "true" ? demoProxy : authenticatedProxy;
 
 export const config = {
   matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"]

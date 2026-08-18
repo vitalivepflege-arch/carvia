@@ -80,6 +80,47 @@ The platform combines normalized vehicle data, comparable listings, estimated ma
 
 Carvia does not scrape protected websites, bypass anti-bot systems, or present synthetic data as live market data. External providers must be integrated through explicit adapters and can remain disabled when credentials are unavailable.
 
+## Marketplace Search
+
+Carvia now ships a normal vehicle-search flow under `/market-search`.
+
+- If official `mobile.de` Search API credentials are configured, Carvia can query `mobile.de` live.
+- If official `AutoScout24` Developer API credentials are configured, Carvia can also query `AutoScout24` live.
+- If those credentials are missing, Carvia automatically falls back to local mock inventory so the normal search flow still works during development.
+
+Environment variables for the live marketplace adapters live in `.env.example`.
+
+## Live Provider Setup
+
+Recommended order for live marketplace rollout:
+
+1. `AutoScout24` first
+2. `mobile.de` second
+
+Current practical state as of August 10, 2026:
+
+- Carvia already supports both official adapters in code.
+- The local vehicle search works without external APIs by using the built-in local inventory and image placeholders.
+- `AutoScout24` needs official `CLIENT_ID` and `CLIENT_SECRET`.
+- `mobile.de` needs official Search API activation plus valid API username/password.
+
+Required environment values:
+
+```env
+AUTOSCOUT_API_ENABLED=true
+AUTOSCOUT_API_BASE_URL=https://api.autoscout24.ch
+AUTOSCOUT_API_AUDIENCE=https://api.autoscout24.ch
+AUTOSCOUT_API_CLIENT_ID=...
+AUTOSCOUT_API_CLIENT_SECRET=...
+
+MOBILE_API_ENABLED=true
+MOBILE_API_BASE_URL=https://services.mobile.de
+MOBILE_API_USERNAME=...
+MOBILE_API_PASSWORD=...
+```
+
+Until those credentials are available, Carvia should continue operating in local-inventory mode rather than scraping protected third-party marketplaces.
+
 ## Current MVP State
 
 This repository currently contains the production-oriented foundation for:

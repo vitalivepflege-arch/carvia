@@ -1,18 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f5f4ef;
-  --surface: #ffffff;
-  --surface-muted: #e7e4db;
-  --foreground: #0f1720;
-  --foreground-muted: #51606f;
-  --border: rgba(15, 23, 32, 0.1);
-  --accent: #0b7a75;
-  --accent-strong: #095b57;
-  --warning: #ca7b19;
-  --danger: #be3f33;
-  --positive: #1f8c54;
-  --navy: #11253b;
+  --background: #17151d;
+  --surface: #211f29;
+  --surface-elevated: #2a2734;
+  --surface-muted: #2f2b3a;
+  --foreground: #f7f6fa;
+  --foreground-muted: #b2adbf;
+  --border: rgba(255, 255, 255, 0.12);
+  --accent: #ff5a00;
+  --accent-strong: #e24f00;
+  --accent-soft: rgba(255, 90, 0, 0.16);
+  --warning: #ffb54a;
+  --danger: #ff7f6f;
+  --positive: #66d39c;
+  --navy: #f7f6fa;
+  --purple: #8c57c5;
 }
 
 * {
@@ -20,8 +23,9 @@
 }
 
 html {
-  background: radial-gradient(circle at top left, rgba(11, 122, 117, 0.12), transparent 28%),
-    linear-gradient(180deg, #faf8f3 0%, #eff0eb 100%);
+  background:
+    radial-gradient(circle at top center, rgba(255, 90, 0, 0.12), transparent 24%),
+    linear-gradient(180deg, #19171f 0%, #141218 100%);
 }
 
 body {
@@ -29,7 +33,19 @@ body {
   min-height: 100vh;
   color: var(--foreground);
   background: transparent;
-  font-family: "Segoe UI", "Inter", sans-serif;
+  font-family: "Segoe UI", "Trebuchet MS", Arial, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(247, 246, 250, 0.44);
 }
 
 a {
@@ -37,3 +53,12 @@ a {
   text-decoration: none;
 }
 
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}

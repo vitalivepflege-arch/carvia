@@ -6,6 +6,21 @@ import { z } from "zod";
 
 type AppRole = "OWNER" | "ADMIN" | "BUYER" | "SALES" | "VIEWER";
 
+function getDemoUser() {
+  if (process.env.SEED_DEMO_DATA !== "true") {
+    return null;
+  }
+
+  return {
+    id: "demo-user-carvia",
+    email: "demo@carvia.local",
+    name: "Carvia Demo Owner",
+    role: "OWNER" as const,
+    companyId: "demo-company-carvia",
+    onboardingCompleted: true
+  };
+}
+
 const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8)
@@ -30,6 +45,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!parsed.success) {
           return null;
+        }
+
+        const demoUser = getDemoUser();
+
+        if (
+          demoUser &&
+          parsed.data.email.toLowerCase() === demoUser.email &&
+          parsed.data.password === "Carvia12345"
+        ) {
+          return demoUser;
         }
 
         const user = await prisma.user.findUnique({
@@ -67,16 +92,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
 
       if (!user && token.userId) {
-        const freshUser = await prisma.user.findUnique({
-          where: { id: String(token.userId) }
-        });
+        if (process.env.SEED_DEMO_DATA === "true") {
+          return token;
+        }
 
-        if (freshUser) {
-          token.role = freshUser.role;
-          token.companyId = freshUser.companyId ?? null;
-          token.onboardingCompleted = Boolean(
-            freshUser.onboardingCompletedAt && freshUser.companyId
-          );
+        try {
+          const freshUser = await prisma.user.findUnique({
+            where: { id: String(token.userId) }
+          });
+
+          if (freshUser) {
+            token.role = freshUser.role;
+            token.companyId = freshUser.companyId ?? null;
+            token.onboardingCompleted = Boolean(
+              freshUser.onboardingCompletedAt && freshUser.companyId
+            );
+          }
+        } catch {
+          return token;
         }
       }
 

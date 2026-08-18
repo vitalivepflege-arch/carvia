@@ -14,7 +14,7 @@ export function CompanyForm() {
       <p className="text-xs uppercase tracking-[0.24em] text-[var(--foreground-muted)]">Company Setup</p>
       <h2 className="mt-3 text-3xl font-semibold text-[var(--navy)]">Unternehmen einrichten</h2>
       <p className="mt-2 text-sm text-[var(--foreground-muted)]">
-        Dieser Schritt verbindet dein Benutzerkonto mit dem ersten Tenant und aktiviert das Dashboard.
+        Dieser Schritt verbindet dein Benutzerkonto mit dem ersten Tenant und aktiviert Suche und Inserate.
       </p>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
@@ -48,4 +48,3 @@ export function CompanyForm() {
     </form>
   );
 }
-

@@ -6,10 +6,9 @@ export default function RegisterPage() {
     <AuthShell
       eyebrow="Create Account"
       title="Starte Carvia mit einem eigenen Haendlerkonto und richte danach sofort deinen ersten Tenant ein."
-      description="Die Registrierung ist bewusst schlank gehalten: erst Zugang absichern, dann Unternehmenskontext erfassen und anschliessend direkt ins Dashboard wechseln."
+      description="Die Registrierung ist bewusst schlank gehalten: erst Zugang absichern, dann Unternehmenskontext erfassen und anschliessend direkt mit Suche und Inseraten arbeiten."
     >
       <RegisterForm />
     </AuthShell>
   );
 }
-

@@ -11,14 +11,14 @@ export default async function OnboardingPage() {
           <p className="text-xs uppercase tracking-[0.32em] text-teal-200">Phase 1</p>
           <h1 className="mt-4 text-5xl font-semibold leading-tight">Tenant aktivieren und das erste Dealer-Profil vorbereiten.</h1>
           <p className="mt-5 max-w-lg text-base text-slate-300">
-            Willkommen{session.user.name ? `, ${session.user.name}` : ""}. Mit diesem Schritt verknuepfst du dein Benutzerkonto mit dem ersten Unternehmen und schaltest Dashboard, Watchlist und spaetere Provider-Syncs frei.
+            Willkommen{session.user.name ? `, ${session.user.name}` : ""}. Mit diesem Schritt verknuepfst du dein Benutzerkonto mit dem ersten Unternehmen und schaltest Suche und Inserate fuer dein Team frei.
           </p>
 
           <div className="mt-8 grid gap-4">
             {[
               "Company record wird in PostgreSQL angelegt.",
               "Dein Benutzer wird als Owner diesem Tenant zugeordnet.",
-              "Dashboard-Zugriff wird danach nur noch im Company-Kontext erlaubt."
+              "Der Zugriff auf Suche und Inserate wird danach nur noch im Company-Kontext erlaubt."
             ].map((item) => (
               <div key={item} className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
                 {item}

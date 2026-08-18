@@ -6,10 +6,9 @@ export default function LoginPage() {
     <AuthShell
       eyebrow="Carvia Access"
       title="Melde dein Einkaufsteam in einer geschlossenen Analyseumgebung an."
-      description="Carvia startet mit einer tenant-sicheren Authentifizierung, damit Einkauf, Watchlist und spaetere Providerdaten sauber pro Unternehmen getrennt bleiben."
+      description="Carvia startet mit einer tenant-sicheren Authentifizierung, damit Suche und Inserate sauber pro Unternehmen getrennt bleiben."
     >
       <LoginForm />
     </AuthShell>
   );
 }
-

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">SUV Vehicle Placeholder</title>
+  <desc id="desc">Stylisierter SUV als lokales Fahrzeugbild fuer Carvia.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#151a23"/>
+      <stop offset="100%" stop-color="#304a61"/>
+    </linearGradient>
+    <linearGradient id="car" x1="0" x2="1">
+      <stop offset="0%" stop-color="#0ea5a3"/>
+      <stop offset="100%" stop-color="#63d2c6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <circle cx="292" cy="600" r="58" fill="#081018"/>
+  <circle cx="900" cy="600" r="58" fill="#081018"/>
+  <circle cx="292" cy="600" r="28" fill="#dbe4ee"/>
+  <circle cx="900" cy="600" r="28" fill="#dbe4ee"/>
+  <path d="M138 516h124l122-162h332l126 58 136 104h84v52H138z" fill="url(#car)"/>
+  <path d="M400 370h236l110 44H344z" fill="#e6f5ff" opacity=".92"/>
+  <path d="M778 420h136l92 78H738z" fill="#e6f5ff" opacity=".88"/>
+  <rect x="138" y="566" width="924" height="22" rx="11" fill="#081018" opacity=".35"/>
+  <text x="96" y="118" fill="#f8fafc" font-family="Arial, sans-serif" font-size="48" font-weight="700">Carvia Local Stock</text>
+  <text x="96" y="164" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="26">SUV</text>
+</svg>

@@ -22,9 +22,9 @@ export function AuthShell({
 
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              ["Tenant-safe", "Company context is enforced at the dashboard boundary."],
+              ["V1 Fokus", "Die erste Version bleibt auf Suche und Inserieren reduziert."],
               ["Auth.js", "Credentials-based access with secure password hashing."],
-              ["Phase 1", "Onboarding flow now bridges account creation and company setup."]
+              ["Onboarding", "Account und Unternehmensprofil werden direkt nacheinander eingerichtet."]
             ].map(([heading, copy]) => (
               <div key={heading} className="rounded-3xl border border-white/10 bg-white/5 p-4">
                 <p className="text-sm font-semibold">{heading}</p>
@@ -39,4 +39,3 @@ export function AuthShell({
     </main>
   );
 }
-

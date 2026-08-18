@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Sedan Vehicle Placeholder</title>
+  <desc id="desc">Stylisierte Limousine als lokales Fahrzeugbild fuer Carvia.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0f1725"/>
+      <stop offset="100%" stop-color="#243b53"/>
+    </linearGradient>
+    <linearGradient id="car" x1="0" x2="1">
+      <stop offset="0%" stop-color="#ff6a1a"/>
+      <stop offset="100%" stop-color="#ff934d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <circle cx="280" cy="600" r="54" fill="#081018"/>
+  <circle cx="880" cy="600" r="54" fill="#081018"/>
+  <circle cx="280" cy="600" r="26" fill="#cbd5e1"/>
+  <circle cx="880" cy="600" r="26" fill="#cbd5e1"/>
+  <path d="M156 520h108l120-140h286l172 56 102 84h52v44H156z" fill="url(#car)"/>
+  <path d="M424 394h210l110 38H378z" fill="#dff3ff" opacity=".92"/>
+  <path d="M760 436h110l66 54H708z" fill="#dff3ff" opacity=".88"/>
+  <rect x="156" y="564" width="840" height="18" rx="9" fill="#081018" opacity=".35"/>
+  <text x="98" y="118" fill="#f8fafc" font-family="Arial, sans-serif" font-size="48" font-weight="700">Carvia Local Stock</text>
+  <text x="98" y="164" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="26">Sedan</text>
+</svg>

@@ -1,4 +1,5 @@
 import { PrismaPg } from "@prisma/adapter-pg";
+import { hashSync } from "bcryptjs";
 import { PrismaClient } from "./generated/prisma/client";
 
 const adapter = new PrismaPg({
@@ -48,6 +49,25 @@ async function main() {
       }
     ],
     skipDuplicates: true
+  });
+
+  await prisma.user.upsert({
+    where: { email: "demo@carvia.local" },
+    update: {
+      name: "Carvia Demo Owner",
+      role: "OWNER",
+      companyId: company.id,
+      onboardingCompletedAt: new Date(),
+      passwordHash: hashSync("Carvia12345", 12)
+    },
+    create: {
+      email: "demo@carvia.local",
+      name: "Carvia Demo Owner",
+      role: "OWNER",
+      companyId: company.id,
+      onboardingCompletedAt: new Date(),
+      passwordHash: hashSync("Carvia12345", 12)
+    }
   });
 }
 

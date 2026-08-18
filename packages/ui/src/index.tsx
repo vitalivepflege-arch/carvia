@@ -7,15 +7,15 @@ type CardProps = PropsWithChildren<{
 type StatusTone = "info" | "success" | "warning" | "danger";
 
 const toneStyles: Record<StatusTone, string> = {
-  info: "bg-[rgba(17,37,59,0.08)] text-[var(--navy)]",
-  success: "bg-[rgba(31,140,84,0.14)] text-[var(--positive)]",
-  warning: "bg-[rgba(202,123,25,0.14)] text-[var(--warning)]",
-  danger: "bg-[rgba(190,63,51,0.14)] text-[var(--danger)]"
+  info: "bg-[rgba(255,255,255,0.08)] text-[var(--foreground)]",
+  success: "bg-[rgba(102,211,156,0.14)] text-[var(--positive)]",
+  warning: "bg-[rgba(255,181,74,0.14)] text-[var(--warning)]",
+  danger: "bg-[rgba(255,127,111,0.16)] text-[var(--danger)]"
 };
 
 export function Card({ children, title }: CardProps) {
   return (
-    <section className="rounded-[28px] border border-[var(--border)] bg-[rgba(255,255,255,0.88)] p-6 shadow-xl shadow-slate-900/5 backdrop-blur">
+    <section className="rounded-[28px] border border-[var(--border)] bg-[var(--surface)] p-6 shadow-[0_18px_60px_rgba(0,0,0,0.22)]">
       <p className="text-xs uppercase tracking-[0.22em] text-[var(--foreground-muted)]">{title}</p>
       {children}
     </section>
@@ -53,10 +53,10 @@ export function MetricBar({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-medium text-[var(--navy)]">{label}</p>
+        <p className="text-sm font-medium text-[var(--foreground)]">{label}</p>
         <StatusPill tone={tone}>{clamped}/100</StatusPill>
       </div>
-      <div className="h-3 overflow-hidden rounded-full bg-[rgba(17,37,59,0.08)]">
+      <div className="h-3 overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)]">
         <div
           className={`h-full rounded-full ${
             tone === "success"
@@ -65,7 +65,7 @@ export function MetricBar({
                 ? "bg-[var(--warning)]"
                 : tone === "danger"
                   ? "bg-[var(--danger)]"
-                  : "bg-[var(--navy)]"
+                  : "bg-[var(--accent)]"
           }`}
           style={{ width: `${clamped}%` }}
         />
@@ -108,21 +108,21 @@ export function MarketRangeChart({
 
   return (
     <div className="space-y-3">
-      <div className="relative h-20 rounded-[24px] border border-[var(--border)] bg-white px-4 py-5">
-        <div className="relative h-4 rounded-full bg-[rgba(17,37,59,0.08)]">
+      <div className="relative h-20 rounded-[24px] border border-[var(--border)] bg-[var(--surface-elevated)] px-4 py-5">
+        <div className="relative h-4 rounded-full bg-[rgba(255,255,255,0.08)]">
           <div
-            className="absolute top-0 h-4 rounded-full bg-[rgba(31,140,84,0.18)]"
+            className="absolute top-0 h-4 rounded-full bg-[rgba(102,211,156,0.18)]"
             style={{
               left: `${p25Pos}%`,
               width: `${Math.max(4, p75Pos - p25Pos)}%`
             }}
           />
           <div
-            className="absolute top-1/2 h-8 w-0.5 -translate-y-1/2 bg-[var(--navy)]"
+            className="absolute top-1/2 h-8 w-0.5 -translate-y-1/2 bg-[var(--foreground)]"
             style={{ left: `${medianPos}%` }}
           />
           <div
-            className="absolute top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[var(--accent)] shadow-lg shadow-slate-900/10"
+            className="absolute top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[var(--surface)] bg-[var(--accent)] shadow-lg shadow-black/30"
             style={{ left: `${currentPos}%` }}
           />
         </div>
@@ -134,7 +134,7 @@ export function MarketRangeChart({
       </div>
       <div className="flex items-center justify-between gap-3 text-sm text-[var(--foreground-muted)]">
         <span>{label}</span>
-        <span>EUR {current.toLocaleString("en-US")}</span>
+        <span>EUR {current.toLocaleString("de-DE")}</span>
       </div>
       <div className="flex items-center justify-between text-xs uppercase tracking-[0.16em] text-[var(--foreground-muted)]">
         <span>P25 {percentile25 !== null ? percentile25.toLocaleString("en-US") : "-"}</span>

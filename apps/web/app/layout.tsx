@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Carvia",
-  description: "Buy smarter. Sell faster."
+  description: "Autos finden, prüfen und schneller handeln."
 };
 
 export default function RootLayout({
@@ -12,9 +14,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="de">
       <body>{children}</body>
     </html>
   );
 }
-

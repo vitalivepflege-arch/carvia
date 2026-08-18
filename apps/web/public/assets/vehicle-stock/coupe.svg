@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Coupe Vehicle Placeholder</title>
+  <desc id="desc">Stylisiertes Coupe als lokales Fahrzeugbild fuer Carvia.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#131720"/>
+      <stop offset="100%" stop-color="#24313f"/>
+    </linearGradient>
+    <linearGradient id="car" x1="0" x2="1">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#fcd34d"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <circle cx="292" cy="600" r="54" fill="#081018"/>
+  <circle cx="860" cy="600" r="54" fill="#081018"/>
+  <circle cx="292" cy="600" r="26" fill="#dde6f0"/>
+  <circle cx="860" cy="600" r="26" fill="#dde6f0"/>
+  <path d="M162 528h112l130-118h286l122 34 120 84h70v42H162z" fill="url(#car)"/>
+  <path d="M424 420h212l128 32H356z" fill="#f7fbff" opacity=".92"/>
+  <path d="M800 452h114l72 44H754z" fill="#f7fbff" opacity=".86"/>
+  <rect x="162" y="566" width="840" height="16" rx="8" fill="#081018" opacity=".35"/>
+  <text x="98" y="118" fill="#f8fafc" font-family="Arial, sans-serif" font-size="48" font-weight="700">Carvia Local Stock</text>
+  <text x="98" y="164" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="26">Coupe</text>
+</svg>
