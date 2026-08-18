@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Hatchback Vehicle Placeholder</title>
+  <desc id="desc">Stylisierter Hatchback als lokales Fahrzeugbild fuer Carvia.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#171422"/>
+      <stop offset="100%" stop-color="#3d304f"/>
+    </linearGradient>
+    <linearGradient id="car" x1="0" x2="1">
+      <stop offset="0%" stop-color="#e11d48"/>
+      <stop offset="100%" stop-color="#fb7185"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <circle cx="286" cy="600" r="54" fill="#081018"/>
+  <circle cx="868" cy="600" r="54" fill="#081018"/>
+  <circle cx="286" cy="600" r="26" fill="#dde6f0"/>
+  <circle cx="868" cy="600" r="26" fill="#dde6f0"/>
+  <path d="M148 526h122l100-126h296l122 42 154 84h54v44H148z" fill="url(#car)"/>
+  <path d="M386 414h208l108 30H334z" fill="#eef7ff" opacity=".92"/>
+  <path d="M744 442h126l90 56H710z" fill="#eef7ff" opacity=".88"/>
+  <rect x="148" y="566" width="848" height="18" rx="9" fill="#081018" opacity=".35"/>
+  <text x="98" y="118" fill="#f8fafc" font-family="Arial, sans-serif" font-size="48" font-weight="700">Carvia Local Stock</text>
+  <text x="98" y="164" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="26">Hatchback</text>
+</svg>

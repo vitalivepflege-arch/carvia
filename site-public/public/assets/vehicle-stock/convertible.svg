@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Convertible Vehicle Placeholder</title>
+  <desc id="desc">Stylisiertes Cabrio als lokales Fahrzeugbild fuer Carvia.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0f1725"/>
+      <stop offset="100%" stop-color="#27445d"/>
+    </linearGradient>
+    <linearGradient id="car" x1="0" x2="1">
+      <stop offset="0%" stop-color="#22c55e"/>
+      <stop offset="100%" stop-color="#86efac"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <circle cx="300" cy="600" r="54" fill="#081018"/>
+  <circle cx="842" cy="600" r="54" fill="#081018"/>
+  <circle cx="300" cy="600" r="26" fill="#dde6f0"/>
+  <circle cx="842" cy="600" r="26" fill="#dde6f0"/>
+  <path d="M176 534h118l120-92h282l116 18 102 74h92v40H176z" fill="url(#car)"/>
+  <path d="M428 456h212l130 22H352z" fill="#f7fbff" opacity=".9"/>
+  <rect x="176" y="566" width="830" height="14" rx="7" fill="#081018" opacity=".35"/>
+  <text x="98" y="118" fill="#f8fafc" font-family="Arial, sans-serif" font-size="48" font-weight="700">Carvia Local Stock</text>
+  <text x="98" y="164" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="26">Convertible</text>
+</svg>

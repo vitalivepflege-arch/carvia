@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Wagon Vehicle Placeholder</title>
+  <desc id="desc">Stylisierter Kombi als lokales Fahrzeugbild fuer Carvia.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#101522"/>
+      <stop offset="100%" stop-color="#374151"/>
+    </linearGradient>
+    <linearGradient id="car" x1="0" x2="1">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8bb8ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#bg)"/>
+  <circle cx="278" cy="600" r="54" fill="#081018"/>
+  <circle cx="888" cy="600" r="54" fill="#081018"/>
+  <circle cx="278" cy="600" r="26" fill="#dbe4ee"/>
+  <circle cx="888" cy="600" r="26" fill="#dbe4ee"/>
+  <path d="M150 522h110l122-138h370l142 60 116 78h38v44H150z" fill="url(#car)"/>
+  <path d="M408 396h246l132 42H352z" fill="#eef7ff" opacity=".92"/>
+  <path d="M810 440h126l62 50H742z" fill="#eef7ff" opacity=".88"/>
+  <rect x="150" y="564" width="898" height="18" rx="9" fill="#081018" opacity=".35"/>
+  <text x="98" y="118" fill="#f8fafc" font-family="Arial, sans-serif" font-size="48" font-weight="700">Carvia Local Stock</text>
+  <text x="98" y="164" fill="#cbd5e1" font-family="Arial, sans-serif" font-size="26">Wagon</text>
+</svg>
