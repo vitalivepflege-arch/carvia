@@ -1,12 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a111b;
-  --foreground: #edf2f7;
-  --foreground-muted: #9bacbe;
-  --surface: rgba(18, 27, 42, 0.92);
-  --surface-strong: rgba(11, 17, 29, 0.86);
-  --accent: #ff6a1a;
+  --background: #17161c;
+  --surface: #1f1d24;
+  --surface-soft: #26242d;
+  --surface-card: #1a1920;
+  --surface-card-alt: #232a63;
+  --foreground: #f5f4f7;
+  --foreground-muted: #b6b2bf;
+  --accent: #ef4a06;
+  --accent-soft: #ff7a38;
+  --border-strong: #5b5865;
 }
 
 @theme inline {
@@ -25,34 +29,175 @@ html {
 }
 
 body {
-  background: var(--background);
+  margin: 0;
+  background: #0f0f13;
   color: var(--foreground);
   font-family: var(--font-display), sans-serif;
 }
 
-a,
 button,
 input,
-select {
-  transition:
-    color 160ms ease,
-    background-color 160ms ease,
-    border-color 160ms ease,
-    opacity 160ms ease,
-    transform 160ms ease;
+select,
+textarea {
+  font: inherit;
 }
 
-button:hover,
-a:hover {
+button {
+  cursor: pointer;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: rgba(255, 255, 255, 0.34);
+}
+
+.icon-button {
+  display: inline-flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: white;
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease,
+    color 160ms ease;
+}
+
+.icon-button:hover {
+  background: rgba(255, 255, 255, 0.08);
   transform: translateY(-1px);
 }
 
-input::placeholder {
-  color: #728197;
+.bottom-nav-item {
+  display: flex;
+  min-width: 4.5rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.74rem;
+  font-weight: 500;
 }
 
-select,
-input,
-button {
-  font: inherit;
+.bottom-nav-item-active {
+  color: var(--accent-soft);
+}
+
+.checkbox {
+  display: inline-flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.55rem;
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, 0.02);
+  color: transparent;
+}
+
+.checkbox-active {
+  border-color: var(--accent);
+  background: rgba(239, 74, 6, 0.18);
+  color: white;
+}
+
+.mini-action-button {
+  display: inline-flex;
+  height: 2.35rem;
+  width: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.sheet-card {
+  overflow: hidden;
+  border-radius: 1.5rem;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.sheet-list-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1.15rem 1rem;
+  text-align: left;
+  font-size: 1.15rem;
+  color: white;
+}
+
+.sheet-list-item:last-child {
+  border-bottom: 0;
+}
+
+.sheet-field-label {
+  display: block;
+  margin-bottom: 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--foreground-muted);
+}
+
+.sheet-input,
+.form-input {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface-soft);
+  padding: 0.95rem 1rem;
+  color: white;
+  outline: none;
+}
+
+.sheet-input:focus,
+.form-input:focus {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.picker-pill {
+  width: 100%;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.95rem 1rem;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.picker-pill-active {
+  background: #35313d;
+  color: white;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 1rem;
+  background: #4a4852;
+  padding: 0.95rem 1rem;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.contact-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  border-radius: 1.15rem;
+  background: var(--accent);
+  padding: 1rem 1.25rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: white;
 }
